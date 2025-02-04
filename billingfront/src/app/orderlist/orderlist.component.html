@@ -1,0 +1,57 @@
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+      <thead class="table-dark">
+        <tr>
+          <th>#</th>
+          <th>Order ID</th>
+          <th>Customer Id</th>
+          <th>Customer Name</th>
+          <th>Mobile Number</th>
+          <th>EmailId </th>
+          <th>Order Date</th>
+          <th>Total Price</th>
+          <th>Status</th>
+
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let order of orderList; let i = index">
+          <td>{{ i + 1 }}</td>
+          <td>{{ order.orderId || 'N/A' }}</td>
+          <td>{{ order.id }}</td>
+          <td>{{ order.customerName || 'N/A' }}</td>
+          <td>{{ order.mobileNumber }}</td>
+          <td>{{ order.emailId }}</td>
+          <td>{{ order.orderDate }}</td>
+          <td>{{ order.totalPrice| currency:'INR' }}</td>
+          <td>{{ order.status   }}</td>
+          <!-- <td> -->
+            <!-- <button data-bs-toggle="modal" class="btn btn-dark" data-bs-target="#inventoryModal" >update</button>
+          </td> -->
+        </tr>
+        <tr>
+          <td colspan="10" class="text-center">
+            <button
+              class="btn btn-dark"
+              data-bs-toggle="modal"
+              data-bs-target="#inventoryModal"
+             >
+              <i class="fas fa-plus"></i> Add New Inventory
+            </button>
+          </td>
+          
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <mat-paginator
+    (page) ="pageChangeEvent($event)"
+    [length] = "100"
+    [pageSize] = "10"
+    [pageSizeOptions] = "[5,10,25,100]"
+    [pageIndex]="0"
+    aria-label = "Select page"aria-label="Select page"
+
+    >
+    </mat-paginator>
+    <app-inventorydetail #inventorydetails></app-inventorydetail>

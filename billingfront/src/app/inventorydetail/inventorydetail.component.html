@@ -1,0 +1,169 @@
+<!-- 
+<input type="text" class="form-control"  [(ngModel)]="id">
+<button (click)="getInventory(id)" class="btn btn-primary">submit</button>
+{{inventory | json}}
+<br> -->
+
+
+
+<div class="modal" id = "inventoryModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Modal title</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+<form 
+  #inventoryForm="ngForm" 
+  (ngSubmit)="onSubmit(inventoryForm)" 
+  class="p-4 border rounded"
+>
+  <!-- Debugging -->
+  <!-- <pre>{{ inventoryForm.value | json }}</pre> -->
+
+  <!-- Inventory ID (Disabled) -->
+  <div class="form-group mb-3">
+    <label for="inventoryId" class="form-label">Inventory ID</label>
+    <input 
+      type="text" 
+      class="form-control" 
+      id="inventoryId" 
+      name="inventoryId" 
+      [(ngModel)]="inventory.inventoryId" 
+      #inventoryId="ngModel" 
+      disabled 
+    />
+  </div>
+
+  <!-- Product ID -->
+   <div ngModelGroup = "productId">
+  <div class="form-group mb-3">
+    <label for="productId" class="form-label">Product ID</label>
+    <input 
+      type="text" 
+      class="form-control" 
+      id="productId" 
+      name="productId" 
+      [(ngModel)]="inventory.productId.productId" 
+      #productId="ngModel" 
+      required
+    />
+    <div *ngIf="productId.invalid && productId.touched" class="text-danger">
+      Product ID is required.
+    </div>
+  </div>
+</div>
+  <!-- Stock Quantity -->
+  <div class="form-group mb-3">
+    <label for="stockQuantity" class="form-label">Stock Quantity</label>
+    <input 
+      type="number" 
+      class="form-control" 
+      id="stockQuantity" 
+      name="stockQuantity" 
+      [(ngModel)]="inventory.stockQuantity" 
+      #stockQuantity="ngModel" 
+      required 
+      min="1"
+    />
+    <div *ngIf="stockQuantity.invalid && stockQuantity.touched" class="text-danger">
+      Stock Quantity is required and must be greater than 0.
+    </div>
+  </div>
+
+  <!-- Reorder Level -->
+  <div class="form-group mb-3">
+    <label for="reorderLevel" class="form-label">Reorder Level</label>
+    <input 
+      type="number" 
+      class="form-control" 
+      id="reorderLevel" 
+      name="reorderLevel" 
+      [(ngModel)]="inventory.reorderLevel" 
+      #reorderLevel="ngModel" 
+      required 
+      min="1"
+    />
+    <div *ngIf="reorderLevel.invalid && reorderLevel.touched" class="text-danger">
+      Reorder Level is required and must be greater than 0.
+    </div>
+  </div>
+
+  <!-- Supplier Name -->
+  <div class="form-group mb-3">
+    <label for="supplierName" class="form-label">Supplier Name</label>
+    <input 
+      type="text" 
+      class="form-control" 
+      id="supplierName" 
+      name="supplierName" 
+      [(ngModel)]="inventory.supplierName" 
+      #supplierName="ngModel" 
+      required
+    />
+    <div *ngIf="supplierName.invalid && supplierName.touched" class="text-danger">
+      Supplier Name is required.
+    </div>
+  </div>
+
+  <!-- Location -->
+  <div class="form-group mb-3">
+    <label for="location" class="form-label">Location</label>
+    <input 
+      type="text" 
+      class="form-control" 
+      id="location" 
+      name="location" 
+      [(ngModel)]="inventory.location" 
+      #location="ngModel" 
+      required
+    />
+    <div *ngIf="location.invalid && location.touched" class="text-danger">
+      Location is required.
+    </div>
+  </div>
+
+  <!-- Unit Price -->
+  <div class="form-group mb-3">
+    <label for="unitPrice" class="form-label">Unit Price</label>
+    <input 
+      type="number" 
+      class="form-control" 
+      id="unitPrice" 
+      name="unitPrice" 
+      [(ngModel)]="inventory.unitPrice" 
+      #unitPrice="ngModel" 
+      required 
+      min="1"
+    />
+    <div *ngIf="unitPrice.invalid && unitPrice.touched" class="text-danger">
+      Unit Price is required and must be greater than 0.
+    </div>
+  </div>
+
+  <!-- Submit Button -->
+  <!-- <button 
+    type="submit" 
+    class="btn btn-primary" 
+    [disabled]="inventoryForm.invalid"
+  >
+    Submit
+  </button> -->
+</form>
+<div class="modal-footer">
+  <!-- <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button> -->
+  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+  <button 
+    type="button" 
+    class="btn btn-primary" 
+    [disabled]="inventoryForm.invalid" 
+    (click)="onSubmit(inventoryForm)"
+    data-bs-dismiss="modal"
+  >
+    Save changes
+  </button>
+</div>
+</div>
+</div>
+</div>

@@ -1,0 +1,160 @@
+
+
+<div class="offcanvas  offcanvas-end w-50  " tabindex="-1" id="offcanvasTop" aria-labelledby="offcanvasTopLabel">
+  <div class="offcanvas-header">
+    <h3 class="offcanvas-title" id="offcanvasResponsiveLabel">Checkout</h3>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      
+<p>{{order | json}}</p>
+      <form #checkoutForm="ngForm" (ngSubmit)="submit(checkoutForm)">
+        <!-- <div class="form-group">
+          <label for="orderId">Order ID</label>
+          <input type="text" class="form-control" id="orderId" name="id" [(ngModel)]="order.id" placeholder="Enter Order ID">
+        </div>
+      
+        <div class="form-group">
+          <label for="customerId">Customer ID</label>
+          <input type="text" class="form-control" id="customerId" name="customerId" [(ngModel)]="order.customer.id" placeholder="Enter Customer ID">
+        </div>
+       -->
+        <div class="form-group">
+          <label for="customerName">Customer Name</label>
+          <input type="text" class="form-control" id="customerName" name="customerName" [(ngModel)]="order.customer.customerName" placeholder="Enter Customer Name">
+        </div>
+      
+        <div class="form-group">
+          <label for="mobileNumber">Mobile Number</label>
+          <input type="text" class="form-control" id="mobileNumber" name="mobileNumber" [(ngModel)]="order.customer.mobileNumber" placeholder="Enter Mobile Number">
+        </div>
+      
+        <!-- <div class="form-group">
+          <label for="email">Email</label>
+          <input type="text" class="form-control" id="email" name="email" [(ngModel)]="order.customer.email" placeholder="Enter Email">
+        </div>
+       -->
+        <div class="form-group">
+          <!-- <label for="status">Order Status</label>
+          <input type="text" class="form-control" id="status" name="status" [(ngModel)]="order.status" placeholder="Enter Order Status">
+        </div> -->
+        <select class="form-select form-control" name="status" [(ngModel)]="order.status" aria-label="Default select example">
+          <option value="" disabled selected>Select Order Status</option>
+          <option value="pending" >Pending</option>
+          <option value="confirmed">Confirmed</option>
+          <!-- <option value="3">Three</option> -->
+        </select>
+      </div>
+        <button type="submit" data-bs-dismiss="offcanvas" class="btn btn-primary">Submit</button>
+      </form>
+      
+
+      <table class="table table-bordered">
+        <thead class="table-dark">
+          <tr>
+          <th>
+            ID
+          </th>
+          <th>
+            Name
+          </th>
+          <th>
+            Category
+          </th>
+          <!-- <th>
+            Description
+          </th> -->
+          <!-- <th>
+            Active Status
+          </th> -->
+          <!-- <th>
+            Created At
+          </th>
+          <th>
+            Updated At
+          </th> -->
+          <!-- <th>
+            View
+          </th> -->
+         <!-- <th>
+          Delete
+         </th>
+        <th>
+          Inventory
+        </th> -->
+        <!-- <th>
+          Add To Cart
+          </th> -->
+          <th>
+            Quantity
+          </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let product of productsQuantity">
+            <td>
+              {{product.product.productId}}
+            </td>
+        <td>
+          {{product.product.name}}
+        </td>
+        <td>
+          {{product.product.category}}
+        </td>
+        <td>
+          {{product.quantity}}
+        </td>
+        <!-- <td>
+          {{product.description}}
+        </td> -->
+        <!-- <td>
+          {{product.isActive}}
+        </td>
+        <td>
+          {{product.createdAt}}
+        </td>
+        <td>
+          {{product.updateAt}}
+        </td> -->
+        <!-- <td>
+          <button class="btn btn-dark" (click)="getProduct(product.productId)" data-bs-toggle="modal" data-bs-target="#productModal" >
+              View
+          </button>
+        </td>
+        <td>
+          <button class="btn btn-dark" (click)="deleteProduct(product.productId)">
+          Delete
+          </button>
+        </td>
+        <td>
+          <button class="btn btn-dark" (click)="getInventoryProd(product.productId)">inventory</button>
+        </td>
+        <td>
+              
+          <button class="btn btn-dark" (click)="addToList('add',product)">
+            <i class="fas fa-plus"></i>
+          </button>
+          <span style="font-size: 1.2rem; margin: 0 10px;">{{ product.count }}</span>
+          <button class="btn btn-dark" (click)="addToList('sub',product)">
+            <i class="fas fa-minus"></i>
+          </button>
+        </td> -->
+        
+          </tr>
+          <!-- <tr>
+            <td colspan="10" class="text-center">
+              <button
+                class="btn btn-dark"
+                data-bs-toggle="modal"
+                data-bs-target="#productModal"
+                (click)="newProd()"
+              >
+                <i class="fas fa-plus"></i> Add New Product
+              </button>
+            </td>
+            
+          </tr>
+        </tbody> -->
+         </table>
+    </div>
+    </div>

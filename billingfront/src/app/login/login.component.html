@@ -1,0 +1,40 @@
+
+
+<div class="container">
+    <h1>
+      Login 
+    </h1>
+    <form #loginForm="ngForm">
+     
+    <hr/>
+  
+      <div class="form-group">
+        <label > Phone </label>
+        <input type="tel" class="form-control" pattern="^\d{10}$" #phoneNumber="ngModel" name="phoneNumber" [class.is-invalid]="phoneNumber.invalid && phoneNumber.touched" required [(ngModel)]="login.phoneNumber"> 
+        <!--<small class="text-danger" [class.d-none]="phone.valid || phone.untouched"> 
+          Phone number is required and  must be 10 digits</small> -->
+          <div *ngIf="phoneNumber.errors && (phoneNumber.invalid || phoneNumber.untouched)">
+            <small class="text-danger" *ngIf="phoneNumber.hasError('required')">Phone number is required</small>
+            <small class="text-danger" *ngIf="phoneNumber.hasError('pattern')">Phone number must be 10 digits</small>
+    
+          </div>
+        </div>
+    
+          <div class="mb-3">
+              <label for="exampleInputPassword1" class="form-label">Password</label>
+              <input type="password" name="password" class="form-control" id="exampleInputPassword1" [(ngModel)]="login.password">
+            </div>
+  
+        
+    
+          <button class="btn btn-primary" type="submit" (click)="userLogin()">
+            Login
+          </button>
+    
+    </form>
+    <br>
+    <a class="nav-link btn text-primary text-decoration-underline " (click)="toReg()">
+      Not registered yet?
+    </a>
+    </div>
+  

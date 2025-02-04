@@ -1,0 +1,8 @@
+.nav-tabs{
+    position: relative;
+    z-index: 2;
+}
+router-outlet{
+    position: relative;
+    z-index: 1;
+}

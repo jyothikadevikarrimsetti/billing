@@ -1,0 +1,158 @@
+
+<!-- <form (ngSubmit)="uploadcsv()" enctype="multipart/form-data">
+    <div class="form-group">
+      <label for="fileInput">Upload CSV</label>
+      <input type="file" id="fileInput" (change)="onFileSelected($event)" class="form-control" accept=".csv" />
+    </div>
+    <button type="submit" class="btn btn-primary">Upload</button>
+  </form> -->
+  
+  <!-- <div class="container mt-4">
+    <div class="row">
+      <div class="col-md-4 mb-3" *ngFor="let product of products">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">{{product.name}}</h5>
+            <p class="card-text">
+              <strong>Category:</strong> {{product.category}}<br>
+              <strong>Description:</strong> {{product.description}}
+            </p>
+            <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#productModal" (click)="getProduct(product.productId)"> View </button>
+            <button class="btn btn-dark" >Update Product</button>
+            <button class="btn btn-dark" (click)="deleteProduct(product.productId)">Remove Product</button>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <div class="card h-100" data-bs-toggle="modal" (click)="newProd()" data-bs-target="#productModal" style="cursor: pointer;">
+          <div class="card-body d-flex align-items-center justify-content-center">
+            <h5 class="card-title m-0">
+              <button class="btn btn-dark" style="border-radius: 50%; padding: 10px; width: 50px; height: 50px;">
+                <i class="fas fa-plus"></i>
+              </button>
+            </h5>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div> -->
+
+<!-- {{products | json}} -->
+ <table class="table table-bordered">
+<thead class="table-dark">
+  <tr>
+  <th>
+    ID
+  </th>
+  <th>
+    Name
+  </th>
+  <th>
+    Category
+  </th>
+  <th>
+    Description
+  </th>
+  <th>
+    Active Status
+  </th>
+  <th>
+    Created At
+  </th>
+  <th>
+    Updated At
+  </th>
+  <th>
+    View
+  </th>
+ <th>
+  Delete
+ </th>
+<th>
+  Inventory
+</th>
+<th>
+  Add To Cart
+  </th>
+  </tr>
+</thead>
+<tbody>
+  <tr *ngFor="let product of products">
+    <td>
+      {{product.productId}}
+    </td>
+<td>
+  {{product.name}}
+</td>
+<td>
+  {{product.category}}
+</td>
+<td>
+  {{product.description}}
+</td>
+<td>
+  {{product.isActive}}
+</td>
+<td>
+  {{product.createdAt}}
+</td>
+<td>
+  {{product.updateAt}}
+</td>
+<td>
+  <button class="btn btn-dark" (click)="getProduct(product.productId)" data-bs-toggle="modal" data-bs-target="#productModal" >
+      View
+  </button>
+</td>
+<td>
+  <button class="btn btn-dark" (click)="deleteProduct(product.productId)">
+  Delete
+  </button>
+</td>
+<td>
+  <button class="btn btn-dark" (click)="getInventoryProd(product.productId)">inventory</button>
+</td>
+<td>
+      
+  <button class="btn btn-dark" (click)="addToList('add',product)">
+    <i class="fas fa-plus"></i>
+  </button>
+  <span style="font-size: 1.2rem; margin: 0 10px;">{{ product.count }}</span>
+  <button class="btn btn-dark" (click)="addToList('sub',product)">
+    <i class="fas fa-minus"></i>
+  </button>
+</td>
+
+  </tr>
+  <tr>
+    <td colspan="10" class="text-center">
+      <button
+        class="btn btn-dark"
+        data-bs-toggle="modal"
+        data-bs-target="#productModal"
+        (click)="newProd()"
+      >
+        <i class="fas fa-plus"></i> Add New Product
+      </button>
+    </td>
+    
+  </tr>
+</tbody>
+ </table>
+ 
+ <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" (click)="sendIds()" data-bs-target="#offcanvasTop" aria-controls="offcanvasResponsive">Checkout</button>
+
+ <mat-paginator
+    (page) ="pageChangeEvent($event)"
+    [length] = "100"
+    [pageSize] = "10"
+    [pageSizeOptions] = "[5,10,25,100]"
+    aria-label = "Select page"aria-label="Select page"
+
+    >
+    </mat-paginator>
+<app-product #product></app-product>
+<app-order #addOrder></app-order>
+
+<!-- <app-inventorylist #invlist></app-inventorylist> -->

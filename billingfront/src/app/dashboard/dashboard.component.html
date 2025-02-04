@@ -1,0 +1,68 @@
+
+<nav class="navbar navbar-expand-lg bg-body-tertiary">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="#">
+            <img src="assets/logo.png" alt="Billing System Logo" style="height: 50px; width: auto;" />
+
+     </a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+              <li class="nav-item">
+                <a class="nav-link active btn" aria-current="page" data-bs-toggle="button" (click)="term=''" (click)="selectedComponent = 'product'"  routerLinkActive="active">Product</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link active btn" aria-current="page"  data-bs-toggle="button" (click)="term=''" (click)="selectedComponent = 'list'"  routerLinkActive="active">Inventory</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link active btn" aria-current="page"  data-bs-toggle="button" (click)="term=''" (click)="selectedComponent = 'orderList'"  routerLinkActive="active">Order List</a>
+              </li>
+             
+            </ul>
+            <form class="d-flex" role="search">
+              <input class="form-control me-2" type="search" name="term" [(ngModel)]="term" placeholder="Search" aria-label="Search">
+              <button class="btn btn-outline-success" (click)="search()" type="submit" >Search</button>
+            </form>
+          </div>
+        </div>
+      </nav>
+        <!-- <div class="content-container">
+          
+                <ul class="nav nav-tabs">
+                <li class="nav nav-item">
+                    <a class="nav-link" aria-current="page"  (click)="selectedComponent = 'product'" routerLinkActive="active"> Product</a>
+                            </li>
+                 -->
+                
+                    <!-- 
+                            <li class="nav nav-item">
+                    <a class="nav-link active" aria-current="page" routerLink="/inventory" routerLinkActive="active"> Inventory</a>
+                            </li> -->
+                    
+                        
+                            <!-- <li class="nav nav-item">
+                    <a class="nav-link" aria-current="page"  (click)="selectedComponent = 'list'" routerLinkActive="active"> Inventorylist</a>
+                            </li>
+                    
+                        </ul> -->
+                            <!-- <ul class="nav nav-tabs"> -->
+                                <!-- <li class="nav nav-item">
+                        <a class="nav-link active" aria-current="page" routerLink="/registration" routerLinkActive="active"> Registration</a>
+                                </li> -->
+                        
+                        <!--     
+                                <li class="nav nav-item">
+                        <a class="nav-link active" aria-current="page" routerLink="/login" routerLinkActive="active"> Login</a>
+                                </li>
+                        
+                            </ul> -->
+                        
+                        <div class="router-content">
+                        <app-productcatalog #productCatalog *ngIf = "selectedComponent === 'product'" ></app-productcatalog>
+                        <app-inventorylist #inventoryList *ngIf = "selectedComponent === 'list'"></app-inventorylist>
+                        <app-orderlist #orderList *ngIf="selectedComponent === 'orderList'">  </app-orderlist>
+                        </div>
+                        <!-- </div> -->
+                        

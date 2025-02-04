@@ -1,0 +1,62 @@
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+      <thead class="table-dark">
+        <tr>
+          <th>#</th>
+          <th>Inventory ID</th>
+          <th>Product ID</th>
+          <th>Product Name</th>
+          <th>Stock Quantity</th>
+          <th>Reorder Level</th>
+          <th>Supplier Name</th>
+          <th>Location</th>
+          <th>Unit Price</th>
+          <th>Total Value</th>
+          <th>Is Active</th>
+          <th>Update</th>
+
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of inventoryList; let i = index">
+          <td>{{ i + 1 }}</td>
+          <td>{{ item.inventoryId || 'N/A' }}</td>
+          <td>{{ item.productId.productId }}</td>
+          <td>{{ item.productId.name || 'N/A' }}</td>
+          <td>{{ item.stockQuantity }}</td>
+          <td>{{ item.reorderLevel }}</td>
+          <td>{{ item.supplierName }}</td>
+          <td>{{ item.location }}</td>
+          <td>{{ item.unitPrice | currency:'INR'  }}</td>
+          <td>{{ item.totalValue ? (item.totalValue | currency:'INR') : 'N/A' }}</td>
+          <td>{{ item.isActive ? 'Yes' : 'No' }}</td>
+          <td>
+            <button data-bs-toggle="modal" class="btn btn-dark" data-bs-target="#inventoryModal" (click)="setInventory(item)">update</button>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="10" class="text-center">
+            <button
+              class="btn btn-dark"
+              data-bs-toggle="modal"
+              data-bs-target="#inventoryModal"
+              (click)="clearInv()"
+              
+            >
+              <i class="fas fa-plus"></i> Add New Inventory
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <mat-paginator
+    (page) ="pageChangeEvent($event)"
+    [length] = "100"
+    [pageSize] = "10"
+    [pageSizeOptions] = "[5,10,25,100]"
+    aria-label = "Select page"aria-label="Select page"
+
+    >
+    </mat-paginator>
+    <app-inventorydetail #inventorydetails></app-inventorydetail>

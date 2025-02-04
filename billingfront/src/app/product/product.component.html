@@ -1,0 +1,151 @@
+<div class="modal" id="productModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Product Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form #productForm="ngForm">
+          <!-- Product ID (Disabled) -->
+          <div class="mb-3">
+            <label for="productId" class="form-label">Product ID</label>
+            <input 
+              type="text" 
+              id="productId" 
+              class="form-control" 
+              [(ngModel)]="product.productId" 
+              name="productId" 
+              disabled 
+            />
+          </div>
+
+          <!-- Name -->
+          <div class="mb-3">
+            <label for="productName" class="form-label">Name</label>
+            <input 
+              type="text" 
+              id="productName" 
+              class="form-control" 
+              [(ngModel)]="product.name" 
+              name="name" 
+              required 
+              minlength="3" 
+              maxlength="100"
+            />
+            <div *ngIf="productForm.controls['name']?.touched || productForm.submitted">
+              <div *ngIf="productForm.controls['name']?.errors?.['required']" class="text-danger">
+                Name is required.
+              </div>
+              <div *ngIf="productForm.controls['name']?.errors?.['minlength']" class="text-danger">
+                Name must be at least 3 characters long.
+              </div>
+              <div *ngIf="productForm.controls['name']?.errors?.['maxlength']" class="text-danger">
+                Name cannot exceed 100 characters.
+              </div>
+            </div>
+          </div>
+
+          <!-- Category -->
+          <div class="mb-3">
+            <label for="productCategory" class="form-label">Category</label>
+            <input 
+              type="text" 
+              id="productCategory" 
+              class="form-control" 
+              [(ngModel)]="product.category" 
+              name="category" 
+              required 
+            />
+            <div *ngIf="productForm.controls['category']?.touched || productForm.submitted">
+              <div *ngIf="productForm.controls['category']?.errors?.['required']" class="text-danger">
+                Category is required.
+              </div>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="mb-3">
+            <label for="productDescription" class="form-label">Description</label>
+            <textarea 
+              id="productDescription" 
+              class="form-control" 
+              rows="4" 
+              [(ngModel)]="product.description" 
+              name="description" 
+              required 
+              minlength="10"
+              maxlength="500"
+            ></textarea>
+            <div *ngIf="productForm.controls['description']?.touched || productForm.submitted">
+              <div *ngIf="productForm.controls['description']?.errors?.['required']" class="text-danger">
+                Description is required.
+              </div>
+              <div *ngIf="productForm.controls['description']?.errors?.['minlength']" class="text-danger">
+                Description must be at least 10 characters long.
+              </div>
+              <div *ngIf="productForm.controls['description']?.errors?.['maxlength']" class="text-danger">
+                Description cannot exceed 500 characters.
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Status (Disabled) -->
+          <div class="mb-3">
+            <label for="productIsActive" class="form-label">Active Status</label>
+            <input 
+              type="text" 
+              id="productIsActive" 
+              class="form-control" 
+              [(ngModel)]="product.isActive" 
+              name="isActive" 
+              disabled 
+            />
+          </div>
+
+          <!-- Created At (Disabled) -->
+          <div class="mb-3">
+            <label for="productCreatedAt" class="form-label">Created At</label>
+            <input 
+              type="text" 
+              id="productCreatedAt" 
+              class="form-control" 
+              [(ngModel)]="product.createdAt" 
+              name="createdAt" 
+              disabled 
+            />
+          </div>
+
+          <!-- Updated At (Disabled) -->
+          <div class="mb-3">
+            <label for="productUpdatedAt" class="form-label">Updated At</label>
+            <input 
+              type="text" 
+              id="productUpdatedAt" 
+              class="form-control" 
+              [(ngModel)]="product.updateAt" 
+              name="updatedAt" 
+              disabled 
+            />
+          </div>
+
+          <!-- Product Description Block -->
+      
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button 
+          type="button" 
+          class="btn btn-primary" 
+          [disabled]="productForm.invalid" 
+          data-bs-dismiss="modal" 
+          (click)="createOrUpdate()"
+        >
+          Save changes
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
