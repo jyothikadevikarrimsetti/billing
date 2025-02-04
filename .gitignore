@@ -1,0 +1,16 @@
+# Ignore Node.js dependencies
+node_modules/
+dist/
+
+# Ignore Java & Spring boot build files
+target/
+*.jar
+*.war
+
+# Ignore Docker build files
+*.log
+.env
+
+#Ignore IDE-specific files
+.vscode/
+.idea/

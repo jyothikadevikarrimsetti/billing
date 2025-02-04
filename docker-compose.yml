@@ -1,0 +1,59 @@
+# version: '3.9'
+services:
+
+  backend: 
+    build: 
+      context: .
+      dockerfile: Dockerfile.backend
+
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/billing
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=jyok2832
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    depends_on:
+      - mysql
+# Development
+  # frontend:
+  #  build:
+  #   context: .
+  #   dockerfile: Dockerfile.frontend
+  #  ports:
+  #   - "4200:4200"
+  #  networks:
+  #   - app-network
+
+  frontend:
+    build: 
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "80:80"
+    networks:
+      - app-network
+    environment:
+      - BACKEND_URL=http://backend:8080 # Use backend in docker network
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: jyok2832
+      MYSQL_DATABASE: billing
+  #  volumes:
+  #   - ./mysql_data:/var/lib/mysql
+  #   - ./db
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
