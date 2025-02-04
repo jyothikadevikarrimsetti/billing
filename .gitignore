@@ -1,6 +1,6 @@
 # Ignore Node.js dependencies
 node_modules/
-dist/
+
 
 # Ignore Java & Spring boot build files
 target/
