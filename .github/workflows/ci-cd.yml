@@ -31,7 +31,7 @@ jobs:
       - name: Build Backend Docker Image
         run: |
           cd billingsystem
-          docker build -t jyothika2832/billing-backend:latest -f ../Dockerfile.backend .
+          docker build -t jyothika2832/billing-backend:latest -f ../Dockerfile.backend --build-arg APP_SOURCE=billingsystem .
 
       # FRONTEND: Build Angular & Push Docker Image
       - name: Install Node.js
