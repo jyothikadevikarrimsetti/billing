@@ -30,7 +30,7 @@ jobs:
 
       - name: Build Backend Docker Image
         run: |
-          cd backend
+          cd billingsystem
           docker build -t jyothika2832/billing-backend:latest -f dockerfile.backend .
 
       # FRONTEND: Build Angular & Push Docker Image
@@ -41,7 +41,7 @@ jobs:
 
       - name: Install Angular Dependencies & Build
         run: |
-          cd frontend
+          cd billingfront
           npm install
           npm run build --prod
 
