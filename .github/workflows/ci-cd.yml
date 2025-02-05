@@ -25,7 +25,7 @@ jobs:
 
       - name: Build Spring Boot JAR
         run: |
-          cd backend
+          cd billingsystem
           mvn clean package -DskipTests
 
       - name: Build Backend Docker Image
