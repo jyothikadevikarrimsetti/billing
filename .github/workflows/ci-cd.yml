@@ -48,7 +48,7 @@ jobs:
       - name: Build Frontend Docker Image
         run: |
           cd billingfront
-          docker build -t jyothika2832/billing-frontend:latest -f ../Dockerfile.frontend .
+          docker build -t jyothika2832/billing-frontend:latest -f ../Dockerfile.frontend billingfront
 
       # Push Docker Images to Docker Hub
       - name: Login to Docker Hub
