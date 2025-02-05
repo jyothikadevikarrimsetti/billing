@@ -8,8 +8,10 @@ ARG APP_SOURCE=billingsystem
 #Copy Maven configouration and source code 
 # COPY billingsystem/pom.xml ./
 # COPY billingsystem/src ./src
-COPY ${APP_SOURCE}/pom.xml ./
-COPY ${APP_SOURCE}/src ./src
+# COPY ${APP_SOURCE}/pom.xml ./
+# COPY ${APP_SOURCE}/src ./src
+COPY ./pom.xml ./
+COPY ./src ./src
 
 #Build the Spring Boot application
 RUN mvn clean package -DskipTests
