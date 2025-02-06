@@ -63,6 +63,9 @@ jobs:
       # Deploy the containers
       - name: Deploy to Server
         run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H localhost >> ~/.ssh/known_hosts
+          
           ssh -T jimmy@localhost <<EOF
             docker pull jyothika2832/billing-backend:latest
             docker pull jyothika2832/billing-frontend:latest
