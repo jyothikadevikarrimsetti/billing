@@ -65,10 +65,15 @@ jobs:
       - name: Deploy to Server
         run: |
           
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          
           # Add the server's SSH key to known_hosts
           ssh-keyscan -H localhost >> ~/.ssh/known_hosts
-          
-          ssh -T jimmy@localhost <<EOF
+          chmod 644 ~/.ssh/know_hosts
+
+          ssh -o StrictHostKeyChecking=no -T jimmy@localhost <<EOF
             docker pull jyothika2832/billing-backend:latest
             docker pull jyothika2832/billing-frontend:latest
             cd ..
