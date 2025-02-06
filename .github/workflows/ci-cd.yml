@@ -71,7 +71,7 @@ jobs:
           
           # Add the server's SSH key to known_hosts
           ssh-keyscan -H localhost >> ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/know_hosts
+          chmod 644 ~/.ssh/known_hosts
 
           ssh -o StrictHostKeyChecking=no -T jimmy@localhost <<EOF
             docker pull jyothika2832/billing-backend:latest
