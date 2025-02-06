@@ -63,7 +63,7 @@ jobs:
       # Deploy the containers
       - name: Deploy to Server
         run: |
-          ssh -T user@192.168.1.100 <<EOF
+          ssh -T jimmy@localhost <<EOF
             docker pull jyothika2832/billing-backend:latest
             docker pull jyothika2832/billing-frontend:latest
             cd ..
