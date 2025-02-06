@@ -60,10 +60,12 @@ jobs:
       - name: Push Frontend Image
         run: docker push jyothika2832/billing-frontend:latest
 
+      
       # Deploy the containers
       - name: Deploy to Server
         run: |
           
+          # Add the server's SSH key to known_hosts
           ssh-keyscan -H localhost >> ~/.ssh/known_hosts
           
           ssh -T jimmy@localhost <<EOF
