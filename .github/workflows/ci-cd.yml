@@ -93,7 +93,7 @@ jobs:
       - name: Deploy to Server
         run: |
 
-          ssh jimmy@localhost "echo 'SSH works!'" <<EOF
+          ssh -vvv jimmy@localhost "echo 'SSH works!'" <<EOF
             docker pull jyothika2832/billing-backend:latest
             docker pull jyothika2832/billing-frontend:latest
             cd ..
