@@ -68,10 +68,10 @@ jobs:
         
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' | ssh-add - <<< "${{ secrets.SSH_PASSPHRASE }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_rsa
+          eval "$(ssh-agent -s)" # Start SSH agent
+          ssh-add ~/.ssh/id_rsa ssh-add - <<< "${{ secrets.SSH_PASSPHRASE }}"  # Add key with passphrase
 
       - name: Add Server SSH Key to known_hosts
         run: |
