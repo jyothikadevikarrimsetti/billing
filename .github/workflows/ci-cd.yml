@@ -71,13 +71,13 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           eval "$(ssh-agent -s)" # Start SSH agent
-          ssh-add ~/.ssh/id_rsa <<< "${{ secrets.SSH_PASSPHRASE }}"  # Add key with passphrase
+          echo "" | ssh-add ~/.ssh/id_rsa # Add key with passphrase
 
       - name: Add Server SSH Key to known_hosts
         run: |
           
           ssh-keyscan -H localhost >> ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts  
       
       # Deploy the containers
       - name: Deploy to Server
