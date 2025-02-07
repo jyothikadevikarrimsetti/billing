@@ -79,6 +79,7 @@ jobs:
         run: |
           
           ssh-keyscan -H localhost >> ~/.ssh/known_hosts
+          ssh-add -l
           chmod 644 ~/.ssh/known_hosts  
 
       # - name: Install SSH key
