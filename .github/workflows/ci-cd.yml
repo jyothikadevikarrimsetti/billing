@@ -70,11 +70,10 @@ jobs:
         
         run: |
           mkdir -p ~/.ssh
-          
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          eval "$(ssh-agent -s)"
-          ssh-add -l
           chmod 600 ~/.ssh/id_rsa
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa  # Add key to the agent
           eval "$(ssh-agent -s)" # Start SSH agent
           echo "${{ secrets.SSH_PASSPHRASE }}" | ssh-add ~/.ssh/id_rsa # Add key with passphrase
 
