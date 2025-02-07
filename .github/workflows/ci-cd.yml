@@ -59,19 +59,25 @@ jobs:
 
       - name: Push Frontend Image
         run: docker push jyothika2832/billing-frontend:latest
+          
+      # - name: Set up SSH key
+        
+        # run: |
+        #   mkdir -p ~/.ssh
+        #   echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        #   chmod 600 ~/.ssh/id_rsa
+        #   eval "$(ssh-agent -s)"
+        #   ssh-add ~/.ssh/id_rsa
 
+      - name: Add Server SSH Key to known_hosts
+        run: |
+          
+          ssh-keygen -H localhost >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
       
       # Deploy the containers
       - name: Deploy to Server
         run: |
-          
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-
-          
-          # Add the server's SSH key to known_hosts
-          ssh-keyscan -H localhost >> ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
 
           ssh -o StrictHostKeyChecking=no -T jimmy@localhost <<EOF
             docker pull jyothika2832/billing-backend:latest
