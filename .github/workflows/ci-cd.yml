@@ -91,7 +91,7 @@ jobs:
       - name: Deploy to Server
         run: |
 
-          ssh  -o StrictHostKeyChecking=no jimmy@LAPTOP-645R1RRG "echo 'SSH works!'" <<EOF
+          ssh jimmy@localhost "echo 'SSH works!'" <<EOF
             docker pull jyothika2832/billing-backend:latest
             docker pull jyothika2832/billing-frontend:latest
             cd ..
