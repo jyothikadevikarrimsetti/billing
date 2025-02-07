@@ -70,7 +70,10 @@ jobs:
         
         run: |
           mkdir -p ~/.ssh
+          
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          eval "$(ssh-agent -s)"
+          ssh-add -l
           chmod 600 ~/.ssh/id_rsa
           eval "$(ssh-agent -s)" # Start SSH agent
           echo "${{ secrets.SSH_PASSPHRASE }}" | ssh-add ~/.ssh/id_rsa # Add key with passphrase
@@ -79,8 +82,7 @@ jobs:
         run: |
           
           ssh-keyscan -H localhost >> ~/.ssh/known_hosts
-          eval "$(ssh-agent -s)"
-          ssh-add -l
+          
           chmod 644 ~/.ssh/known_hosts  
 
       # - name: Install SSH key
