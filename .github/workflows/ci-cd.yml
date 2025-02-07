@@ -71,7 +71,7 @@ jobs:
 
       - name: Add Server SSH Key to known_hosts
         run: |
-          
+          mkdir -p ~/.ssh
           ssh-keygen -H localhost >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
       
