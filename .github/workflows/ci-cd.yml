@@ -72,7 +72,6 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-add ~/.ssh/id_rsa  # Add key to the agent
           eval "$(ssh-agent -s)" # Start SSH agent
           echo "${{ secrets.SSH_PASSPHRASE }}" | ssh-add ~/.ssh/id_rsa # Add key with passphrase
           ssh-add -l # Debug List loaded keys
