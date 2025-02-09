@@ -93,7 +93,8 @@ jobs:
       - name: Deploy to EC@ Server
         run: |
 
-          ssh -vvv -o StrictHostKeyChecking=no ${{secrets.SSH_USERNAME}}@${{secrets.EC2_PUBLIC_IP}} "echo 'SSH works!'" <<EOF
+          ssh -vvv -o StrictHostKeyChecking=no ${{secrets.SSH_USERNAME}}@${{secrets.EC2_PUBLIC_IP}} <<'EOF'
+            echo 'SSH works!'" 
             docker pull jyothika2832/billing-backend:latest
             docker pull jyothika2832/billing-frontend:latest
             cd ..
