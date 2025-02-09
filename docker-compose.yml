@@ -2,9 +2,10 @@
 services:
 
   backend: 
-    build: 
-      context: .
-      dockerfile: Dockerfile.backend
+    # build: 
+      # context: .
+      # dockerfile: Dockerfile.backend
+    image: jyothika2832/billing-backend:latest
 
     ports:
       - "8080:8080"
@@ -28,9 +29,11 @@ services:
   #   - app-network
 
   frontend:
-    build: 
-      context: .
-      dockerfile: Dockerfile.frontend
+    # build: 
+    #   context: .
+    #   dockerfile: Dockerfile.frontend
+    image: jyothika2832/billing-frontend:latest
+
     ports:
       - "80:80"
     networks:
