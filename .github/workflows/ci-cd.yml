@@ -95,7 +95,16 @@ jobs:
 
           ssh -vvv -o StrictHostKeyChecking=no ${{secrets.SSH_USERNAME}}@${{secrets.EC2_PUBLIC_IP}} <<'EOF'
             echo "SSH works!" 
-            docker pull jyothika2832/billing-backend:latest
+            sudo su
+
+            # Navigate to deployment directory
+            cd /home/ubuntu
+
+            # Download the docker compose from repo
+
+            curl -o docker-compose.yml https://github.com/jyothikadevikarrimsetti/billing/blob/b9832a0e83bc3fa6d9a9c26b5b76eb672922ad93/docker-compose.yml
+
+            docker pull jyothika2832/billing-backend:latest 
             docker pull jyothika2832/billing-frontend:latest
             cd ..
             docker-compose down
