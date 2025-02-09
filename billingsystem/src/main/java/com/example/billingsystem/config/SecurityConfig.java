@@ -1,7 +1,5 @@
 package com.example.billingsystem.config;
 
-import com.example.billingsystem.jwt.AuthEntryPoint;
-import com.example.billingsystem.jwt.AuthTokenFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +15,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
+
+import com.example.billingsystem.jwt.AuthEntryPoint;
+import com.example.billingsystem.jwt.AuthTokenFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -76,7 +77,7 @@ public class SecurityConfig {
     @Bean
     public CorsFilter corsFilter(){
         CorsConfiguration corsConfiguration = new CorsConfiguration();
-        corsConfiguration.addAllowedOrigin("*");
+        corsConfiguration.addAllowedOriginPattern("*");
         // corsConfiguration.addAllowedOrigin("http://localhost");
 //        corsConfiguration.addAllowedOrigin("http://localhost:4200");
         corsConfiguration.addAllowedHeader("*");
