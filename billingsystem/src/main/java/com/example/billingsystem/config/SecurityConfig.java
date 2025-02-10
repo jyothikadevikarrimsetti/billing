@@ -80,7 +80,7 @@ public class SecurityConfig {
         // corsConfiguration.addAllowedOriginPattern("*");
         // corsConfiguration.addAllowedOrigin("http://localhost");
 //        corsConfiguration.addAllowedOrigin("http://localhost:4200");
-        corsConfiguration.addAllowedOrigin("http://65.2.123.191");
+        corsConfiguration.addAllowedOrigin("http://ec2-3-111-37-183.ap-south-1.compute.amazonaws.com");
         corsConfiguration.addAllowedHeader("*");
         corsConfiguration.addAllowedMethod("*");
 
