@@ -3,14 +3,17 @@ import { Injectable } from '@angular/core';
 import { catchError, Observable, throwError } from 'rxjs';
 import { InventoryDTO } from '../models/InventoryDTO';
 import { error } from 'console';
+import { environment } from '../../environments/environment.prod';
 
 @Injectable({
   providedIn: 'root'
 })
 export class InventoryService {
 
+
+   API_URL = environment.apiUrl
   constructor(private _http : HttpClient) { }
-   _url = "http://localhost:8080/products/inventory"
+   _url = `${this.API_URL}/products/inventory`
 
   errorHandler(error : HttpErrorResponse){
     return throwError(()=>error.message||"server error")

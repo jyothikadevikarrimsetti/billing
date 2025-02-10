@@ -6,14 +6,17 @@ import { ProductdetailDTO } from '../models/ProductdetailDTO';
 import { CreateProductDTO } from '../models/productDTO';
 import { InventoryDTO } from '../models/InventoryDTO';
 import { ProductsQuantity } from '../models/ProdQuantity';
+import { environment } from '../../environments/environment.prod';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ProductcatalogService {
 
+  API_URL = environment.apiUrl
+
   constructor(private _http : HttpClient) { }
-  _url = "http://localhost:8080/products"
+  _url = `${this.API_URL}/products`
   
   // uploadCSV(file : File ) : Observable<string>{
 

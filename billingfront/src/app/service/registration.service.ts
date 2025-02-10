@@ -4,14 +4,15 @@ import { RegistrationDTO } from '../models/RegistrationDTO';
 import { catchError, Observable, throwError } from 'rxjs';
 import { LoginDTO } from '../models/LoginDTO';
 import { LoginResponseDTO } from '../models/LoginResponseDTO';
+import { environment } from '../../environments/environment.prod';
 
 @Injectable({
   providedIn: 'root'
 })
 export class RegistrationService {
-
+API_URL = environment.apiUrl
   constructor(private _http : HttpClient) { }
-  _url = 'http://localhost:8080/auth'
+  _url = `${this.API_URL}/auth`
 
   registration(register : RegistrationDTO) : Observable<string>{
     const url = `${this._url}/registration`

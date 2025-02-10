@@ -3,15 +3,17 @@ import { Injectable } from '@angular/core';
 import { catchError, Observable, throwError } from 'rxjs';
 import { OrderDTO } from '../models/OrderDTO';
 import { OrderModelDTO } from '../models/OrderModelReqDTO';
+import { environment } from '../../environments/environment.prod';
 
 @Injectable({
   providedIn: 'root'
 })
 export class OrderService {
 
+  API_URL = environment.apiUrl
   constructor(private _http : HttpClient) { }
 
-  _url ="http://localhost:8080/orders"
+  _url =`${this.API_URL}/orders`
 
   allOrders(pgNo : number , pageSize : number) : Observable<OrderDTO[]>{
     const url = `${this._url}/all?pgNo=${pgNo}&pgSize=${pageSize}`
