@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("products/inventory")
+@RequestMapping("api/products/inventory")
 public class InventoryController {
     @Autowired
     private InventoryService inventoryService;
