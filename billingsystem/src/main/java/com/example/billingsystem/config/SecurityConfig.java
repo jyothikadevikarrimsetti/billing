@@ -39,7 +39,7 @@ public class SecurityConfig {
         http.cors(cors->{})
                 .csrf((csrf)->csrf.disable())
                 .authorizeHttpRequests((requests)->{
-                 requests.requestMatchers("api","api/auth/registration").permitAll()
+                 requests.requestMatchers("api/","api/auth/registration").permitAll()
                          .requestMatchers("api/auth/login").permitAll()
                          .anyRequest().authenticated();// ee line em cheptundhi ante inkemi request ayina vaste daniki authentication kavali
 
@@ -80,7 +80,7 @@ public class SecurityConfig {
         // corsConfiguration.addAllowedOriginPattern("*");
         // corsConfiguration.addAllowedOrigin("http://localhost");
 //        corsConfiguration.addAllowedOrigin("http://localhost:4200");
-        corsConfiguration.addAllowedOrigin("https://ec2-65-2-74-85.ap-south-1.compute.amazonaws.com");
+        corsConfiguration.addAllowedOrigin("https://ec2-13-201-74-142.ap-south-1.compute.amazonaws.com");
         corsConfiguration.addAllowedHeader("*");
         corsConfiguration.addAllowedMethod("*");
 
