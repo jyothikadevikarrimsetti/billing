@@ -19,7 +19,7 @@ pool:
   vmImage: ubuntu-latest
 
 stages:
-  - stage: Provision_AKS  # Fixed stage name (was Provision_Aks)
+  - stage: Provision_AKS
     displayName: 'Provision AKS Cluster'
     jobs:
       - job: Create_Cluster
@@ -34,8 +34,9 @@ stages:
               az group create \
                 --name $(resourceGroup) \
                 --location $(location)
+        
         - task: AzureCLI@2
-          displayName: 'Create AKS Cluster'  # Fixed (was AWS Cluster)
+          displayName: 'Create AKS Cluster'
           inputs:
             azureSubscription: $(azureSubscription)
             scriptType: 'bash'
@@ -50,34 +51,51 @@ stages:
                 --generate-ssh-keys \
                 --location $(location)
               
-              # Store credentials for next stage
+              # Store credentials as build artifact
+              mkdir -p $(Pipeline.Workspace)/kube
               az aks get-credentials \
                 --resource-group $(resourceGroup) \
                 --name $(aksCluster) \
                 --overwrite-existing \
-                --file $(Pipeline.Workspace)/kubeconfig
+                --file $(Pipeline.Workspace)/kube/config
+              
+              # Validate kubeconfig exists
+              ls -la $(Pipeline.Workspace)/kube
+              cat $(Pipeline.Workspace)/kube/config
+        
+        - task: PublishBuildArtifacts@1
+          displayName: 'Publish kubeconfig'
+          inputs:
+            PathtoPublish: '$(Pipeline.Workspace)/kube'
+            ArtifactName: 'kubeconfig'
+            publishLocation: 'Container'
 
   - stage: Deploy_Application
     displayName: 'Deploy Application'
-    dependsOn: Provision_AKS  # Must match the stage name exactly
+    dependsOn: Provision_AKS
     jobs:
     - job: Deploy
       steps:
-        # Install kubectl
+        - task: DownloadBuildArtifacts@0
+          displayName: 'Download kubeconfig'
+          inputs:
+            artifactName: 'kubeconfig'
+            downloadPath: '$(Pipeline.Workspace)'
+        
         - task: KubectlInstaller@0
           displayName: 'Install kubectl'
 
-        # Configure kubectl
         - task: Bash@3
           displayName: 'Configure kubectl'
           inputs:
             targetType: 'inline'
             script: |
               mkdir -p ~/.kube
-              cp $(Pipeline.Workspace)/kubeconfig ~/.kube/config
+              cp $(Pipeline.Workspace)/kubeconfig/config ~/.kube/config
+              chmod 600 ~/.kube/config
               kubectl config current-context
+              kubectl cluster-info
         
-        # Create namespace
         - task: Kubernetes@1
           displayName: 'Create Namespace'
           inputs:
@@ -85,11 +103,11 @@ stages:
             useConfigurationFile: true
             configuration: |
               apiVersion: v1
-              kind: Namespace  # Fixed (was NameSpace)
+              kind: Namespace
               metadata:
                 name: $(namespace)
         
-        # Create MySQL secrets
+        # Rest of your deployment steps remain the same...
         - task: Kubernetes@1
           displayName: 'Create MySQL secrets'
           inputs:
@@ -107,17 +125,15 @@ stages:
                 username: $(echo -n 'your-db-user' | base64)
                 password: $(echo -n 'your-db-password' | base64)
 
-        # Deploy MySQL
         - task: KubernetesManifest@1
           displayName: 'Deploy MySQL'
           inputs:
             action: 'deploy'
             namespace: $(namespace)
             manifests: |
-              $(Pipeline.Workspace)/manifests/mysql-deployment.yaml  # Fixed (was mainfests)
+              $(Pipeline.Workspace)/manifests/mysql-deployment.yaml
               $(Pipeline.Workspace)/manifests/mysql-service.yaml
 
-        # Wait for MySQL to be ready
         - task: Bash@3
           displayName: 'Wait for MySQL'
           inputs:
@@ -125,17 +141,15 @@ stages:
             script: |
               kubectl wait --namespace $(namespace) --for=condition=ready pod -l app=mysql --timeout=300s
 
-        # Deploy Spring Boot backend
         - task: KubernetesManifest@1
           displayName: 'Deploy Backend'
           inputs:
             action: 'deploy'
             namespace: $(namespace)
             manifests: |
-              $(Pipeline.Workspace)/manifests/backend-deployment.yaml  # Fixed (was frontend)
+              $(Pipeline.Workspace)/manifests/backend-deployment.yaml
               $(Pipeline.Workspace)/manifests/backend-service.yaml
 
-        # Deploy Angular frontend
         - task: KubernetesManifest@1
           displayName: 'Deploy Frontend'
           inputs:
@@ -145,11 +159,10 @@ stages:
               $(Pipeline.Workspace)/manifests/frontend-deployment.yaml
               $(Pipeline.Workspace)/manifests/frontend-service.yaml
 
-        # Get frontend service URL
         - task: Bash@3
           displayName: 'Get Frontend URL'
           inputs:
             targetType: 'inline'
             script: |
-              echo "##vso[task.setvariable variable=frontendUrl]http://$(kubectl get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"  # Fixed (was ingreass)
+              echo "##vso[task.setvariable variable=frontendUrl]http://$(kubectl get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
               echo "Access your application at: http://$(kubectl get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
