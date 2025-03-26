@@ -121,3 +121,49 @@ stages:
           displayName: 'Create MySQL secrets'
 
         # Remaining deployment steps remain the same...
+
+
+        - task: KubernetesManifest@1
+          displayName: 'Deploy MySQL'
+          inputs:
+            kubernetesServiceEndpoint: $(kubernetesServiceConnection)
+            action: 'deploy'
+            namespace: $(namespace)
+            manifests: |
+              $(System.DefaultWorkingDirectory)/manifests/mysql-deployment.yaml
+              $(System.DefaultWorkingDirectory)/manifests/mysql-service.yaml
+
+        - task: Bash@3
+          displayName: 'Wait for MySQL'
+          inputs:
+            targetType: 'inline'
+            script: |
+              kubectl wait --namespace $(namespace) --for=condition=ready pod -l app=mysql --timeout=300s
+
+        - task: KubernetesManifest@1
+          displayName: 'Deploy Backend'
+          inputs:
+            kubernetesServiceEndpoint: $(kubernetesServiceConnection)
+            action: 'deploy'
+            namespace: $(namespace)
+            manifests: |
+              $(System.DefaultWorkingDirectory)/manifests/backend-deployment.yaml
+              $(System.DefaultWorkingDirectory)/manifests/backend-service.yaml
+
+        - task: KubernetesManifest@1
+          displayName: 'Deploy Frontend'
+          inputs:
+            kubernetesServiceEndpoint: $(kubernetesServiceConnection)
+            action: 'deploy'
+            namespace: $(namespace)
+            manifests: |
+              $(System.DefaultWorkingDirectory)/manifests/frontend-deployment.yaml
+              $(System.DefaultWorkingDirectory)/manifests/frontend-service.yaml
+
+        - task: Bash@3
+          displayName: 'Get Frontend URL'
+          inputs:
+            targetType: 'inline'
+            script: |
+              echo "##vso[task.setvariable variable=frontendUrl]http://$(kubectl get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+              echo "Access your application at: http://$(kubectl get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
