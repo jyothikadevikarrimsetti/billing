@@ -15,6 +15,7 @@ variables:
   azureSubscription: 'azure-resource-manager-service-connection'
   resourceGroup: 'practise-rg'
   aksCluster: 'my-aks-cluster'
+  location: 'eastus'
   namespace: 'production'
   nodeCount: 2
   vmSize: 'Standard_B2s'  # Adjust VM size as needed
