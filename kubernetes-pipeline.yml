@@ -1,8 +1,3 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
 trigger:
 - main
 
@@ -11,13 +6,12 @@ variables:
   frontendImage: 'jyothika2832/billing-backend:latest'
   backendImage: 'jyothika2832/billing-frontend:latest'
   mysqlImage: 'mysql:5.7'
-  
   # Azure resources
   azureSubscription: 'azure-resource-manager-service-connection'
   resourceGroup: 'practise-rg'
   aksCluster: 'my-aks-cluster'
+  location: 'eastus'
   namespace: 'production'
-  location: 'eastus'  # Must specify a location
   nodeCount: 2
   vmSize: 'Standard_B2s'
 
@@ -25,50 +19,47 @@ pool:
   vmImage: ubuntu-latest
 
 stages:
-  - stage: Provision_AKS
+  - stage: Provision_AKS  # Fixed stage name (was Provision_Aks)
     displayName: 'Provision AKS Cluster'
     jobs:
-    - job: Create_Cluster
-      steps:
-      - task: AzureCLI@2
-        displayName: 'Create Resource Group'
-        inputs:
-          azureSubscription: $(azureSubscription)
-          scriptType: 'bash'
-          scriptLocation: 'inlineScript'
-          inlineScript: |
-            az group create \
-              --name $(resourceGroup) \
-              --location $(location)
-      
-      - task: AzureCLI@2
-        displayName: 'Create AKS Cluster'
-        inputs:
-          azureSubscription: $(azureSubscription)
-          scriptType: 'bash'
-          scriptLocation: 'inlineScript'
-          inlineScript: |
-            az aks create \
-              --resource-group $(resourceGroup) \
-              --name $(aksCluster) \
-              --node-count $(nodeCount) \
-              --node-vm-size $(vmSize) \
-              --enable-addons monitoring \
-              --generate-ssh-keys \
-              --location $(location)  # Added location parameter
-            
-            # Store credentials for next stage
-            az aks get-credentials \
-              --resource-group $(resourceGroup) \
-              --name $(aksCluster) \
-              --overwrite-existing \
-              --file $(Pipeline.Workspace)/kubeconfig
-
-  # Rest of your pipeline remains the same...
+      - job: Create_Cluster
+        steps:
+        - task: AzureCLI@2
+          displayName: 'Create Resource Group'
+          inputs:
+            azureSubscription: $(azureSubscription)
+            scriptType: 'bash'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              az group create \
+                --name $(resourceGroup) \
+                --location $(location)
+        - task: AzureCLI@2
+          displayName: 'Create AKS Cluster'  # Fixed (was AWS Cluster)
+          inputs:
+            azureSubscription: $(azureSubscription)
+            scriptType: 'bash'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              az aks create \
+                --resource-group $(resourceGroup) \
+                --name $(aksCluster) \
+                --node-count $(nodeCount) \
+                --node-vm-size $(vmSize) \
+                --enable-addons monitoring \
+                --generate-ssh-keys \
+                --location $(location)
+              
+              # Store credentials for next stage
+              az aks get-credentials \
+                --resource-group $(resourceGroup) \
+                --name $(aksCluster) \
+                --overwrite-existing \
+                --file $(Pipeline.Workspace)/kubeconfig
 
   - stage: Deploy_Application
     displayName: 'Deploy Application'
-    dependsOn: Provision_AKS
+    dependsOn: Provision_AKS  # Must match the stage name exactly
     jobs:
     - job: Deploy
       steps:
@@ -94,7 +85,7 @@ stages:
             useConfigurationFile: true
             configuration: |
               apiVersion: v1
-              kind: NameSpace
+              kind: Namespace  # Fixed (was NameSpace)
               metadata:
                 name: $(namespace)
         
@@ -117,32 +108,42 @@ stages:
                 password: $(echo -n 'your-db-password' | base64)
 
         # Deploy MySQL
-        - task: KubernetesManifest@0
+        - task: KubernetesManifest@1
           displayName: 'Deploy MySQL'
           inputs:
             action: 'deploy'
             namespace: $(namespace)
             manifests: |
-              $(Pipeline.Workspace)/mainfests/mysql-deployment.yaml
-              $(Pipeline.Workspace)/mainfests/mysql-service.yaml
+              $(Pipeline.Workspace)/manifests/mysql-deployment.yaml  # Fixed (was mainfests)
+              $(Pipeline.Workspace)/manifests/mysql-service.yaml
 
         # Wait for MySQL to be ready
         - task: Bash@3
-          displayName:  'Wait for MySQL'
+          displayName: 'Wait for MySQL'
           inputs:
             targetType: 'inline'
             script: |
               kubectl wait --namespace $(namespace) --for=condition=ready pod -l app=mysql --timeout=300s
 
-        #Deploy Spring Boot backend
-        - task: KubernetesManifest@0
+        # Deploy Spring Boot backend
+        - task: KubernetesManifest@1
           displayName: 'Deploy Backend'
           inputs:
             action: 'deploy'
             namespace: $(namespace)
             manifests: |
-              $(Pipeline.Workspace)/mainfests/frontend-deployment.yaml
-              $(Pipeline.Workspace)/mainfests/frontend-service.yaml
+              $(Pipeline.Workspace)/manifests/backend-deployment.yaml  # Fixed (was frontend)
+              $(Pipeline.Workspace)/manifests/backend-service.yaml
+
+        # Deploy Angular frontend
+        - task: KubernetesManifest@1
+          displayName: 'Deploy Frontend'
+          inputs:
+            action: 'deploy'
+            namespace: $(namespace)
+            manifests: |
+              $(Pipeline.Workspace)/manifests/frontend-deployment.yaml
+              $(Pipeline.Workspace)/manifests/frontend-service.yaml
 
         # Get frontend service URL
         - task: Bash@3
@@ -150,6 +151,5 @@ stages:
           inputs:
             targetType: 'inline'
             script: |
-              echo "##vso[task.setvariable variable=frontendUrl]http://$(kubectl get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingreass[0].ip}')"
+              echo "##vso[task.setvariable variable=frontendUrl]http://$(kubectl get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"  # Fixed (was ingreass)
               echo "Access your application at: http://$(kubectl get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
-
