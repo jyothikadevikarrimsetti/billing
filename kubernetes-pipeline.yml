@@ -7,58 +7,65 @@ trigger:
 - main
 
 variables:
-  #Docker hub images
+  # Docker hub images
   frontendImage: 'jyothika2832/billing-backend:latest'
   backendImage: 'jyothika2832/billing-frontend:latest'
   mysqlImage: 'mysql:5.7'
-  #Azure resources
+  
+  # Azure resources
   azureSubscription: 'azure-resource-manager-service-connection'
   resourceGroup: 'practise-rg'
   aksCluster: 'my-aks-cluster'
-  location: 'eastus'
   namespace: 'production'
+  location: 'eastus'  # Must specify a location
   nodeCount: 2
-  vmSize: 'Standard_B2s'  # Adjust VM size as needed
+  vmSize: 'Standard_B2s'
 
 pool:
   vmImage: ubuntu-latest
 
 stages:
-  - stage: Provision_Aks
+  - stage: Provision_AKS
     displayName: 'Provision AKS Cluster'
     jobs:
-      - job: Create_Cluster
-        steps:
-        - task: AzureCLI@2
-          displayName: 'Create Resource Group'
-          inputs:
-            azureSubscription: $(azureSubscription)
-            scriptType: 'bash'
-            scriptLocation: 'inlineScript'
-            inlineScript: |
-              az group create \
-                --name $(resourceGroup) \
-                --location $(location)
-        - task: AzureCLI@2
-          displayName: 'Create AWS Cluster'
-          inputs:
-            azureSubscription: $(azureSubscription)
-            scriptType: 'bash'
-            scriptLocation: 'inlineScript'
-            inlineScript: |
-              az aks create \
-                --resource-group $(resourceGroup) \
-                --name $(aksCluster) \
-                --node-count $(nodeCount) \ 
-                --node-vm-size $(vmSize) \
-                --enable-addons monitoring \
-                --generate-ssh-keys
-              # Store crdentials for next stage
-              az aks get-credentials \
-                --resource-group $(resourceGroup) \
-                --name $(aksCluster) \
-                --overwrite-existing \
-                --file $(Pipeline.Workspace)/kubeconfig
+    - job: Create_Cluster
+      steps:
+      - task: AzureCLI@2
+        displayName: 'Create Resource Group'
+        inputs:
+          azureSubscription: $(azureSubscription)
+          scriptType: 'bash'
+          scriptLocation: 'inlineScript'
+          inlineScript: |
+            az group create \
+              --name $(resourceGroup) \
+              --location $(location)
+      
+      - task: AzureCLI@2
+        displayName: 'Create AKS Cluster'
+        inputs:
+          azureSubscription: $(azureSubscription)
+          scriptType: 'bash'
+          scriptLocation: 'inlineScript'
+          inlineScript: |
+            az aks create \
+              --resource-group $(resourceGroup) \
+              --name $(aksCluster) \
+              --node-count $(nodeCount) \
+              --node-vm-size $(vmSize) \
+              --enable-addons monitoring \
+              --generate-ssh-keys \
+              --location $(location)  # Added location parameter
+            
+            # Store credentials for next stage
+            az aks get-credentials \
+              --resource-group $(resourceGroup) \
+              --name $(aksCluster) \
+              --overwrite-existing \
+              --file $(Pipeline.Workspace)/kubeconfig
+
+  # Rest of your pipeline remains the same...
+
   - stage: Deploy_Application
     displayName: 'Deploy Application'
     dependsOn: Provision_AKS
