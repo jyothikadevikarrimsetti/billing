@@ -43,10 +43,8 @@ stages:
             scriptType: 'bash'
             scriptLocation: 'inlineScript'
             inlineScript: |
-              # Check if cluster exists
               if az aks show --resource-group $(resourceGroup) --name $(aksCluster) --query name -o tsv 2>/dev/null; then
                 echo "Cluster exists - scaling node pool..."
-                # To update node count, we need to scale the node pool
                 az aks nodepool scale \
                   --resource-group $(resourceGroup) \
                   --cluster-name $(aksCluster) \
@@ -63,25 +61,6 @@ stages:
                   --generate-ssh-keys \
                   --location $(location)
               fi
-              
-              # Get credentials and store as artifact
-              mkdir -p $(Pipeline.Workspace)/kube
-              az aks get-credentials \
-                --resource-group $(resourceGroup) \
-                --name $(aksCluster) \
-                --overwrite-existing \
-                --file $(Pipeline.Workspace)/kube/config
-              
-              # Verify the file exists
-              ls -la $(Pipeline.Workspace)/kube
-              cat $(Pipeline.Workspace)/kube/config
-
-        - task: PublishPipelineArtifact@1
-          displayName: 'Publish kubeconfig'
-          inputs:
-            targetPath: '$(Pipeline.Workspace)/kube'
-            artifactName: 'kubeconfig'
-            publishLocation: 'pipeline'
 
   - stage: Configure_Kubernetes
     displayName: 'Configure Kubernetes Access'
@@ -89,37 +68,36 @@ stages:
     jobs:
     - job: Configure
       steps:
-        - task: DownloadPipelineArtifact@2
-          displayName: 'Download kubeconfig'
-          inputs:
-            artifact: 'kubeconfig'
-            path: '$(Pipeline.Workspace)/kube'
-
         - task: KubectlInstaller@0
           displayName: 'Install kubectl'
 
-        - task: Bash@3
-          displayName: 'Verify Cluster Access'
+        - task: AzureCLI@2
+          displayName: 'Get AKS Credentials'
           inputs:
-            targetType: 'inline'
-            script: |
-              mkdir -p ~/.kube
-              cp $(Pipeline.Workspace)/kube/config ~/.kube/config
-              chmod 600 ~/.kube/config
+            azureSubscription: $(azureSubscription)
+            scriptType: 'bash'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              az aks get-credentials \
+                --resource-group $(resourceGroup) \
+                --name $(aksCluster) \
+                --overwrite-existing \
+                --admin
+              
               kubectl config current-context
               kubectl cluster-info
 
-        - task: Bash@3
+        - task: Kubernetes@1
           displayName: 'Create Namespace'
           inputs:
-            targetType: 'inline'
-            script: |
-              kubectl apply -f - <<EOF
+            kubernetesServiceEndpoint: $(kubernetesServiceConnection)
+            command: 'apply'
+            useConfigurationFile: true
+            configuration: |
               apiVersion: v1
               kind: Namespace
               metadata:
                 name: $(namespace)
-              EOF
 
   - stage: Deploy_Application
     displayName: 'Deploy Application'
@@ -127,23 +105,23 @@ stages:
     jobs:
     - job: Deploy
       steps:
-        - task: Bash@3
+        - task: Kubernetes@1
           displayName: 'Create MySQL secrets'
           inputs:
-            targetType: 'inline'
-            script: |
-              kubectl apply -f - <<EOF
+            kubernetesServiceEndpoint: $(kubernetesServiceConnection)
+            command: 'apply'
+            useConfigurationFile: true
+            configuration: |
               apiVersion: v1
               kind: Secret
               metadata:
                 name: mysql-secrets
                 namespace: $(namespace)
               type: Opaque
-              data:
-                root-password: $(echo -n 'your-root-password' | base64 -w0)
-                username: $(echo -n 'your-db-user' | base64 -w0)
-                password: $(echo -n 'your-db-password' | base64 -w0)
-              EOF
+              stringData:
+                root-password: your-root-password
+                username: your-db-user
+                password: your-db-password
 
         - task: KubernetesManifest@1
           displayName: 'Deploy MySQL'
