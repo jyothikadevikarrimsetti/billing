@@ -43,7 +43,6 @@ stages:
             scriptType: 'bash'
             scriptLocation: 'inlineScript'
             inlineScript: |
-              # Check if cluster exists
               if az aks show --resource-group $(resourceGroup) --name $(aksCluster) --query name -o tsv 2>/dev/null; then
                 echo "Cluster exists - checking current node count..."
                 CURRENT_NODES=$(az aks show \
@@ -89,49 +88,27 @@ stages:
             scriptType: 'bash'
             scriptLocation: 'inlineScript'
             inlineScript: |
-              # Create kubeconfig directory
-              mkdir -p $(Pipeline.Workspace)/kube
-              
-              # Get credentials with admin access
+              mkdir -p $(Pipeline.Workspace)/kubeconfig
               az aks get-credentials \
                 --resource-group $(resourceGroup) \
                 --name $(aksCluster) \
-                --overwrite-existing \
-                --file $(Pipeline.Workspace)/kube/config \
-                --admin
+                --admin \
+                --file $(Pipeline.Workspace)/kubeconfig/config
               
-              # Set KUBECONFIG environment variable
-              echo "##vso[task.setvariable variable=KUBECONFIG]$(Pipeline.Workspace)/kube/config"
+              echo "##vso[task.setvariable variable=KUBECONFIG]$(Pipeline.Workspace)/kubeconfig/config"
+              echo "##vso[task.prependpath]$(Pipeline.Workspace)/kubeconfig"
 
-        - task: Bash@3
-          displayName: 'Create Namespace'
-          inputs:
-            targetType: 'inline'
-            script: |
-              # Create namespace using kubectl
-              kubectl create namespace $(namespace) --dry-run=client -o yaml | kubectl apply -f -
-              
-              # Verify namespace creation
-              echo "Current namespaces:"
-              kubectl get namespaces
-              echo "Verifying namespace $(namespace):"
-              kubectl get namespace $(namespace) -o wide
+        - script: |
+            mkdir -p $HOME/.kube
+            cp $(Pipeline.Workspace)/kubeconfig/config $HOME/.kube/config
+            chmod 600 $HOME/.kube/config
+            kubectl config use-context "$(aksCluster)-admin"
+          displayName: 'Configure kubectl access'
 
-        - task: Bash@3
-          displayName: 'Verify Cluster Access'
-          inputs:
-            targetType: 'inline'
-            script: |
-              # Verify kubeconfig exists
-              ls -la $(Pipeline.Workspace)/kube/config
-              
-              # Set context explicitly
-              kubectl config use-context "$(aksCluster)-admin"
-              
-              # Verify cluster access
-              kubectl config current-context
-              kubectl cluster-info
-              kubectl get nodes
+        - script: |
+            kubectl create namespace $(namespace) --dry-run=client -o yaml | kubectl apply -f - --validate=false
+            kubectl get namespace $(namespace)
+          displayName: 'Create and verify namespace'
 
   - stage: Deploy_Application
     displayName: 'Deploy Application'
@@ -139,28 +116,16 @@ stages:
     jobs:
     - job: Deploy
       steps:
-        - task: Bash@3
+        - script: |
+            kubectl create secret generic mysql-secrets \
+              --namespace $(namespace) \
+              --from-literal=root-password=$(SQLPASS) \
+              --from-literal=username=root \
+              --from-literal=password=$(SQLPASS) \
+              --validate=false
+            
+            kubectl get secret mysql-secrets -n $(namespace)
           displayName: 'Create MySQL secrets'
-          inputs:
-            targetType: 'inline'
-            script: |
-              kubectl apply -f - <<EOF
-              apiVersion: v1
-              kind: Secret
-              metadata:
-                name: mysql-secrets
-                namespace: $(namespace)
-              type: Opaque
-              stringData:
-                root-password: $(SQLPASS)
-                username: root
-                password: $(SQLPASS)
-              EOF
-              
-              # Verify secret creation
-              kubectl get secret mysql-secrets -n $(namespace) -o yaml
-
-          
 
         - task: KubernetesManifest@1
           displayName: 'Deploy MySQL'
@@ -172,12 +137,9 @@ stages:
               $(System.DefaultWorkingDirectory)/manifests/mysql-deployment.yaml
               $(System.DefaultWorkingDirectory)/manifests/mysql-service.yaml
 
-        - task: Bash@3
+        - script: |
+            kubectl wait --namespace $(namespace) --for=condition=ready pod -l app=mysql --timeout=300s
           displayName: 'Wait for MySQL'
-          inputs:
-            targetType: 'inline'
-            script: |
-              kubectl wait --namespace $(namespace) --for=condition=ready pod -l app=mysql --timeout=300s
 
         - task: KubernetesManifest@1
           displayName: 'Deploy Backend'
@@ -199,10 +161,7 @@ stages:
               $(System.DefaultWorkingDirectory)/manifests/frontend-deployment.yaml
               $(System.DefaultWorkingDirectory)/manifests/frontend-service.yaml
 
-        - task: Bash@3
+        - script: |
+            echo "##vso[task.setvariable variable=frontendUrl]http://$(kubectl get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+            echo "Access your application at: http://$(kubectl get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
           displayName: 'Get Frontend URL'
-          inputs:
-            targetType: 'inline'
-            script: |
-              echo "##vso[task.setvariable variable=frontendUrl]http://$(kubectl get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
-              echo "Access your application at: http://$(kubectl get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
