@@ -95,29 +95,25 @@ stages:
                 --admin \
                 --file $(Pipeline.Workspace)/kubeconfig/config
               
-              # Set KUBECONFIG for subsequent tasks
               echo "##vso[task.setvariable variable=KUBECONFIG]$(Pipeline.Workspace)/kubeconfig/config"
               echo "##vso[task.prependpath]$(Pipeline.Workspace)/kubeconfig"
 
         - script: |
-            echo "Current KUBECONFIG: $KUBECONFIG"
-            ls -la $(Pipeline.Workspace)/kubeconfig/config
             mkdir -p $HOME/.kube
             cp $(Pipeline.Workspace)/kubeconfig/config $HOME/.kube/config
             chmod 600 $HOME/.kube/config
             kubectl config use-context "$(aksCluster)-admin"
+            
+            # Verify connection
             kubectl config view
+            kubectl cluster-info
+            kubectl get nodes
           displayName: 'Configure kubectl access'
 
         - script: |
             kubectl create namespace $(namespace) --dry-run=client -o yaml | kubectl apply -f - --validate=false
             kubectl get namespace $(namespace)
           displayName: 'Create and verify namespace'
-
-        - script: |
-            kubectl cluster-info
-            kubectl get nodes
-          displayName: 'Verify Cluster Connection'
 
   - stage: Deploy_Application
     displayName: 'Deploy Application'
@@ -126,6 +122,9 @@ stages:
     - job: Deploy
       steps:
         - script: |
+            export KUBECONFIG=$(Pipeline.Workspace)/kubeconfig/config
+            kubectl config use-context "$(aksCluster)-admin"
+            
             kubectl create secret generic mysql-secrets \
               --namespace $(namespace) \
               --from-literal=root-password=$(SQLPASS) \
@@ -147,13 +146,14 @@ stages:
               $(System.DefaultWorkingDirectory)/manifests/mysql-service.yaml
 
         - script: |
+            export KUBECONFIG=$(Pipeline.Workspace)/kubeconfig/config
             kubectl wait --namespace $(namespace) --for=condition=ready pod -l app=mysql --timeout=300s
           displayName: 'Wait for MySQL'
 
         - task: KubernetesManifest@1
           displayName: 'Deploy Backend'
           inputs:
-            kubernetesServiceEndpoint: $(kubernetesServiceConnection)
+            kubernetesServiceConnection: $(kubernetesServiceConnection)
             action: 'deploy'
             namespace: $(namespace)
             manifests: |
@@ -163,7 +163,7 @@ stages:
         - task: KubernetesManifest@1
           displayName: 'Deploy Frontend'
           inputs:
-            kubernetesServiceEndpoint: $(kubernetesServiceConnection)
+            kubernetesServiceConnection: $(kubernetesServiceConnection)
             action: 'deploy'
             namespace: $(namespace)
             manifests: |
@@ -171,6 +171,7 @@ stages:
               $(System.DefaultWorkingDirectory)/manifests/frontend-service.yaml
 
         - script: |
+            export KUBECONFIG=$(Pipeline.Workspace)/kubeconfig/config
             echo "##vso[task.setvariable variable=frontendUrl]http://$(kubectl get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
             echo "Access your application at: http://$(kubectl get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
           displayName: 'Get Frontend URL'
