@@ -133,31 +133,34 @@ stages:
     jobs:
     - job: Deploy
       steps:
-        - script: |
-            export KUBECONFIG=$(Pipeline.Workspace)/kubeconfig/config
-            
-            # Verify connection first
-            if ! kubectl cluster-info; then
-              echo "##vso[task.logissue type=error]Cluster connection failed"
-              exit 1
-            fi
-            
-            # Create secret with validation disabled
-            kubectl create secret generic mysql-secrets \
-              --namespace $(namespace) \
-              --from-literal=root-password=$(SQLPASS) \
-              --from-literal=username=root \
-              --from-literal=password=$(SQLPASS) \
-              --validate=false
-            
-            # Verify secret
-            if ! kubectl get secret mysql-secrets -n $(namespace); then
-              echo "##vso[task.logissue type=error]Failed to create secret"
-              exit 1
-            fi
+        - task: AzureCLI@2
           displayName: 'Create MySQL secrets'
+          inputs:
+            azureSubscription: $(azureSubscription)
+            scriptType: 'bash'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              # Get credentials again to ensure fresh connection
+              az aks get-credentials \
+                --resource-group $(resourceGroup) \
+                --name $(aksCluster) \
+                --admin \
+                --file /tmp/kubeconfig
+              
+              export KUBECONFIG=/tmp/kubeconfig
+              
+              # Create secret
+              kubectl create secret generic mysql-secrets \
+                --namespace $(namespace) \
+                --from-literal=root-password=$(SQLPASS) \
+                --from-literal=username=root \
+                --from-literal=password=$(SQLPASS) \
+                --dry-run=client -o yaml | kubectl apply -f -
+              
+              # Verify
+              kubectl get secret mysql-secrets -n $(namespace)
           env:
-            KUBECONFIG: $(Pipeline.Workspace)/kubeconfig/config
+            SQLPASS: $(sqlPassword)
 
 
         - task: KubernetesManifest@1
