@@ -36,21 +36,31 @@ stages:
                 --name $(resourceGroup) \
                 --location $(location)
         
-        - task: AzureCLI@2
-          displayName: 'Create AKS Cluster'
-          inputs:
-            azureSubscription: $(azureSubscription)
-            scriptType: 'bash'
-            scriptLocation: 'inlineScript'
-            inlineScript: |
-              az aks create \
-                --resource-group $(resourceGroup) \
-                --name $(aksCluster) \
-                --node-count $(nodeCount) \
-                --node-vm-size $(vmSize) \
-                --enable-addons monitoring \
-                --generate-ssh-keys \
-                --location $(location)
+              - task: AzureCLI@2
+                displayName: 'Create or Update AKS Cluster'
+                inputs:
+                  azureSubscription: $(azureSubscription)
+                  scriptType: 'bash'
+                  scriptLocation: 'inlineScript'
+                  inlineScript: |
+                    # Check if cluster exists
+                    if az aks show --resource-group $(resourceGroup) --name $(aksCluster) --query name -o tsv 2>/dev/null; then
+                      echo "Cluster exists - updating..."
+                      az aks update \
+                        --resource-group $(resourceGroup) \
+                        --name $(aksCluster) \
+                        --node-count $(nodeCount)
+                    else
+                      echo "Cluster does not exist - creating..."
+                      az aks create \
+                        --resource-group $(resourceGroup) \
+                        --name $(aksCluster) \
+                        --node-count $(nodeCount) \
+                        --node-vm-size $(vmSize) \
+                        --enable-addons monitoring \
+                        --generate-ssh-keys \
+                        --location $(location)
+
 
   - stage: Configure_Kubernetes
     displayName: 'Configure Kubernetes Access'
