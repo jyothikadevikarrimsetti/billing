@@ -43,11 +43,14 @@ stages:
             scriptType: 'bash'
             scriptLocation: 'inlineScript'
             inlineScript: |
+              # Check if cluster exists
               if az aks show --resource-group $(resourceGroup) --name $(aksCluster) --query name -o tsv 2>/dev/null; then
-                echo "Cluster exists - updating..."
-                az aks update \
+                echo "Cluster exists - scaling node pool..."
+                # To update node count, we need to scale the node pool
+                az aks nodepool scale \
                   --resource-group $(resourceGroup) \
-                  --name $(aksCluster) \
+                  --cluster-name $(aksCluster) \
+                  --name nodepool1 \
                   --node-count $(nodeCount)
               else
                 echo "Cluster does not exist - creating..."
@@ -60,6 +63,14 @@ stages:
                   --generate-ssh-keys \
                   --location $(location)
               fi
+              
+              # Get credentials
+              mkdir -p $(System.DefaultWorkingDirectory)/kube
+              az aks get-credentials \
+                --resource-group $(resourceGroup) \
+                --name $(aksCluster) \
+                --overwrite-existing \
+                --file $(System.DefaultWorkingDirectory)/kube/config
 
   - stage: Configure_Kubernetes
     displayName: 'Configure Kubernetes Access'
@@ -67,27 +78,19 @@ stages:
     jobs:
     - job: Configure
       steps:
-        - task: AzureCLI@2
-          displayName: 'Get AKS Credentials'
+        - task: Bash@3
+          displayName: 'Verify Cluster Access'
           inputs:
-            azureSubscription: $(azureSubscription)
-            scriptType: 'bash'
-            scriptLocation: 'inlineScript'
-            inlineScript: |
-              az aks get-credentials \
-                --resource-group $(resourceGroup) \
-                --name $(aksCluster) \
-                --overwrite-existing \
-                --file $(System.DefaultWorkingDirectory)/kubeconfig
-              
-              kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kubeconfig cluster-info
+            targetType: 'inline'
+            script: |
+              kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kube/config cluster-info
 
         - task: Bash@3
           displayName: 'Create Namespace'
           inputs:
             targetType: 'inline'
             script: |
-              kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kubeconfig apply -f - <<EOF
+              kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kube/config apply -f - <<EOF
               apiVersion: v1
               kind: Namespace
               metadata:
@@ -105,7 +108,7 @@ stages:
           inputs:
             targetType: 'inline'
             script: |
-              kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kubeconfig apply -f - <<EOF
+              kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kube/config apply -f - <<EOF
               apiVersion: v1
               kind: Secret
               metadata:
@@ -133,7 +136,7 @@ stages:
           inputs:
             targetType: 'inline'
             script: |
-              kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kubeconfig wait --namespace $(namespace) --for=condition=ready pod -l app=mysql --timeout=300s
+              kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kube/config wait --namespace $(namespace) --for=condition=ready pod -l app=mysql --timeout=300s
 
         - task: KubernetesManifest@1
           displayName: 'Deploy Backend'
@@ -160,5 +163,5 @@ stages:
           inputs:
             targetType: 'inline'
             script: |
-              echo "##vso[task.setvariable variable=frontendUrl]http://$(kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kubeconfig get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
-              echo "Access your application at: http://$(kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kubeconfig get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+              echo "##vso[task.setvariable variable=frontendUrl]http://$(kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kube/config get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+              echo "Access your application at: http://$(kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kube/config get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
