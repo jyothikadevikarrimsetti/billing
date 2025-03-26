@@ -102,7 +102,20 @@ stages:
               
               # Set KUBECONFIG environment variable
               echo "##vso[task.setvariable variable=KUBECONFIG]$(Pipeline.Workspace)/kube/config"
-
+              
+              - task: Bash@3
+                        displayName: 'Create Namespace (Bash Method)'
+                        inputs:
+                          targetType: 'inline'
+                          script: |
+                            # Create namespace using kubectl
+                            kubectl create namespace $(namespace) --dry-run=client -o yaml | kubectl apply -f -
+                            
+                            # Verify namespace creation
+                            echo "Current namespaces:"
+                            kubectl get namespaces
+                            echo "Verifying namespace $(namespace):"
+                            kubectl get namespace $(namespace) -o wide
         - task: Bash@3
           displayName: 'Verify Cluster Access'
           inputs:
