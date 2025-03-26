@@ -43,13 +43,24 @@ stages:
             scriptType: 'bash'
             scriptLocation: 'inlineScript'
             inlineScript: |
+              # Check if cluster exists
               if az aks show --resource-group $(resourceGroup) --name $(aksCluster) --query name -o tsv 2>/dev/null; then
-                echo "Cluster exists - scaling node pool..."
-                az aks nodepool scale \
+                echo "Cluster exists - checking current node count..."
+                CURRENT_NODES=$(az aks show \
                   --resource-group $(resourceGroup) \
-                  --cluster-name $(aksCluster) \
-                  --name nodepool1 \
-                  --node-count $(nodeCount)
+                  --name $(aksCluster) \
+                  --query agentPoolProfiles[0].count -o tsv)
+                
+                if [ "$CURRENT_NODES" -ne $(nodeCount) ]; then
+                  echo "Scaling node pool from $CURRENT_NODES to $(nodeCount)..."
+                  az aks nodepool scale \
+                    --resource-group $(resourceGroup) \
+                    --cluster-name $(aksCluster) \
+                    --name nodepool1 \
+                    --node-count $(nodeCount)
+                else
+                  echo "Node count already matches desired count ($(nodeCount)) - no scaling needed"
+                fi
               else
                 echo "Cluster does not exist - creating..."
                 az aks create \
@@ -61,6 +72,13 @@ stages:
                   --generate-ssh-keys \
                   --location $(location)
               fi
+              
+              # Get credentials
+              az aks get-credentials \
+                --resource-group $(resourceGroup) \
+                --name $(aksCluster) \
+                --overwrite-existing \
+                --admin
 
   - stage: Configure_Kubernetes
     displayName: 'Configure Kubernetes Access'
@@ -71,19 +89,11 @@ stages:
         - task: KubectlInstaller@0
           displayName: 'Install kubectl'
 
-        - task: AzureCLI@2
-          displayName: 'Get AKS Credentials'
+        - task: Bash@3
+          displayName: 'Verify Cluster Access'
           inputs:
-            azureSubscription: $(azureSubscription)
-            scriptType: 'bash'
-            scriptLocation: 'inlineScript'
-            inlineScript: |
-              az aks get-credentials \
-                --resource-group $(resourceGroup) \
-                --name $(aksCluster) \
-                --overwrite-existing \
-                --admin
-              
+            targetType: 'inline'
+            script: |
               kubectl config current-context
               kubectl cluster-info
 
