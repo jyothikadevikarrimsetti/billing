@@ -64,13 +64,24 @@ stages:
                   --location $(location)
               fi
               
-              # Get credentials
-              mkdir -p $(System.DefaultWorkingDirectory)/kube
+              # Get credentials and store as artifact
+              mkdir -p $(Pipeline.Workspace)/kube
               az aks get-credentials \
                 --resource-group $(resourceGroup) \
                 --name $(aksCluster) \
                 --overwrite-existing \
-                --file $(System.DefaultWorkingDirectory)/kube/config
+                --file $(Pipeline.Workspace)/kube/config
+              
+              # Verify the file exists
+              ls -la $(Pipeline.Workspace)/kube
+              cat $(Pipeline.Workspace)/kube/config
+
+        - task: PublishPipelineArtifact@1
+          displayName: 'Publish kubeconfig'
+          inputs:
+            targetPath: '$(Pipeline.Workspace)/kube'
+            artifactName: 'kubeconfig'
+            publishLocation: 'pipeline'
 
   - stage: Configure_Kubernetes
     displayName: 'Configure Kubernetes Access'
@@ -78,19 +89,32 @@ stages:
     jobs:
     - job: Configure
       steps:
+        - task: DownloadPipelineArtifact@2
+          displayName: 'Download kubeconfig'
+          inputs:
+            artifact: 'kubeconfig'
+            path: '$(Pipeline.Workspace)/kube'
+
+        - task: KubectlInstaller@0
+          displayName: 'Install kubectl'
+
         - task: Bash@3
           displayName: 'Verify Cluster Access'
           inputs:
             targetType: 'inline'
             script: |
-              kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kube/config cluster-info
+              mkdir -p ~/.kube
+              cp $(Pipeline.Workspace)/kube/config ~/.kube/config
+              chmod 600 ~/.kube/config
+              kubectl config current-context
+              kubectl cluster-info
 
         - task: Bash@3
           displayName: 'Create Namespace'
           inputs:
             targetType: 'inline'
             script: |
-              kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kube/config apply -f - <<EOF
+              kubectl apply -f - <<EOF
               apiVersion: v1
               kind: Namespace
               metadata:
@@ -108,7 +132,7 @@ stages:
           inputs:
             targetType: 'inline'
             script: |
-              kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kube/config apply -f - <<EOF
+              kubectl apply -f - <<EOF
               apiVersion: v1
               kind: Secret
               metadata:
@@ -136,7 +160,7 @@ stages:
           inputs:
             targetType: 'inline'
             script: |
-              kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kube/config wait --namespace $(namespace) --for=condition=ready pod -l app=mysql --timeout=300s
+              kubectl wait --namespace $(namespace) --for=condition=ready pod -l app=mysql --timeout=300s
 
         - task: KubernetesManifest@1
           displayName: 'Deploy Backend'
@@ -163,5 +187,5 @@ stages:
           inputs:
             targetType: 'inline'
             script: |
-              echo "##vso[task.setvariable variable=frontendUrl]http://$(kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kube/config get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
-              echo "Access your application at: http://$(kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kube/config get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+              echo "##vso[task.setvariable variable=frontendUrl]http://$(kubectl get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+              echo "Access your application at: http://$(kubectl get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
