@@ -72,9 +72,9 @@ stages:
                   --location $(location)
               fi
 
+
   - stage: Configure_Kubernetes
     displayName: 'Configure Kubernetes Access'
-    dependsOn: Provision_AKS
     jobs:
     - job: Configure
       steps:
@@ -95,25 +95,36 @@ stages:
                 --admin \
                 --file $(Pipeline.Workspace)/kubeconfig/config
               
+              # Verify config file was created
+              if [ ! -f "$(Pipeline.Workspace)/kubeconfig/config" ]; then
+                echo "##vso[task.logissue type=error]Failed to create kubeconfig file"
+                exit 1
+              fi
+              
               echo "##vso[task.setvariable variable=KUBECONFIG]$(Pipeline.Workspace)/kubeconfig/config"
               echo "##vso[task.prependpath]$(Pipeline.Workspace)/kubeconfig"
 
         - script: |
-            mkdir -p $HOME/.kube
-            cp $(Pipeline.Workspace)/kubeconfig/config $HOME/.kube/config
-            chmod 600 $HOME/.kube/config
-            kubectl config use-context "$(aksCluster)-admin"
+            # Set KUBECONFIG explicitly
+            export KUBECONFIG=$(Pipeline.Workspace)/kubeconfig/config
             
-            # Verify connection
-            kubectl config view
-            kubectl cluster-info
-            kubectl get nodes
-          displayName: 'Configure kubectl access'
-
-        - script: |
+            # Verify kubectl can connect
+            if ! kubectl cluster-info; then
+              echo "##vso[task.logissue type=error]Failed to connect to cluster"
+              exit 1
+            fi
+            
+            # Create namespace with validation disabled
             kubectl create namespace $(namespace) --dry-run=client -o yaml | kubectl apply -f - --validate=false
-            kubectl get namespace $(namespace)
-          displayName: 'Create and verify namespace'
+            
+            # Verify namespace
+            if ! kubectl get namespace $(namespace); then
+              echo "##vso[task.logissue type=error]Failed to create namespace"
+              exit 1
+            fi
+          displayName: 'Setup Kubernetes Access'
+          env:
+            KUBECONFIG: $(Pipeline.Workspace)/kubeconfig/config
 
   - stage: Deploy_Application
     displayName: 'Deploy Application'
@@ -123,8 +134,14 @@ stages:
       steps:
         - script: |
             export KUBECONFIG=$(Pipeline.Workspace)/kubeconfig/config
-            kubectl config use-context "$(aksCluster)-admin"
             
+            # Verify connection first
+            if ! kubectl cluster-info; then
+              echo "##vso[task.logissue type=error]Cluster connection failed"
+              exit 1
+            fi
+            
+            # Create secret with validation disabled
             kubectl create secret generic mysql-secrets \
               --namespace $(namespace) \
               --from-literal=root-password=$(SQLPASS) \
@@ -132,8 +149,15 @@ stages:
               --from-literal=password=$(SQLPASS) \
               --validate=false
             
-            kubectl get secret mysql-secrets -n $(namespace)
+            # Verify secret
+            if ! kubectl get secret mysql-secrets -n $(namespace); then
+              echo "##vso[task.logissue type=error]Failed to create secret"
+              exit 1
+            fi
           displayName: 'Create MySQL secrets'
+          env:
+            KUBECONFIG: $(Pipeline.Workspace)/kubeconfig/config
+
 
         - task: KubernetesManifest@1
           displayName: 'Deploy MySQL'
