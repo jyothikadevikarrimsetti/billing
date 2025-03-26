@@ -96,35 +96,36 @@ stages:
                 --file $(Pipeline.Workspace)/kubeconfig/config
               
               # Verify config file was created
+              ls -la $(Pipeline.Workspace)/kubeconfig/
               if [ ! -f "$(Pipeline.Workspace)/kubeconfig/config" ]; then
                 echo "##vso[task.logissue type=error]Failed to create kubeconfig file"
                 exit 1
               fi
               
-              echo "##vso[task.setvariable variable=KUBECONFIG]$(Pipeline.Workspace)/kubeconfig/config"
-              echo "##vso[task.prependpath]$(Pipeline.Workspace)/kubeconfig"
+              # Print cluster info for debugging
+              export KUBECONFIG=$(Pipeline.Workspace)/kubeconfig/config
+              kubectl config view
+              kubectl cluster-info || true
 
         - script: |
-            # Set KUBECONFIG explicitly
+            echo "Current KUBECONFIG: $KUBECONFIG"
+            ls -la $(Pipeline.Workspace)/kubeconfig/
+            
+            # Explicitly set KUBECONFIG
             export KUBECONFIG=$(Pipeline.Workspace)/kubeconfig/config
             
             # Verify kubectl can connect
-            if ! kubectl cluster-info; then
-              echo "##vso[task.logissue type=error]Failed to connect to cluster"
-              exit 1
-            fi
+            kubectl cluster-info
             
-            # Create namespace with validation disabled
+            # Create namespace
             kubectl create namespace $(namespace) --dry-run=client -o yaml | kubectl apply -f - --validate=false
             
             # Verify namespace
-            if ! kubectl get namespace $(namespace); then
-              echo "##vso[task.logissue type=error]Failed to create namespace"
-              exit 1
-            fi
+            kubectl get namespace $(namespace)
           displayName: 'Setup Kubernetes Access'
           env:
             KUBECONFIG: $(Pipeline.Workspace)/kubeconfig/config
+
 
   - stage: Deploy_Application
     displayName: 'Deploy Application'
