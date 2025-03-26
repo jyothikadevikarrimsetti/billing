@@ -8,7 +8,7 @@ variables:
   mysqlImage: 'mysql:5.7'
   # Azure resources
   azureSubscription: 'azure-resource-manager-service-connection'
-  kubernetesServiceConnection: 'my-aks-connection' # New service connection for kubectl
+  kubernetesServiceConnection: 'my-aks-connection'
   resourceGroup: 'practise-rg'
   aksCluster: 'my-aks-cluster'
   location: 'eastus'
@@ -43,7 +43,6 @@ stages:
             scriptType: 'bash'
             scriptLocation: 'inlineScript'
             inlineScript: |
-              # Check if cluster exists
               if az aks show --resource-group $(resourceGroup) --name $(aksCluster) --query name -o tsv 2>/dev/null; then
                 echo "Cluster exists - updating..."
                 az aks update \
@@ -61,15 +60,6 @@ stages:
                   --generate-ssh-keys \
                   --location $(location)
               fi
-              
-              # Get credentials
-              mkdir -p $(Pipeline.Workspace)/kube
-              az aks get-credentials \
-                --resource-group $(resourceGroup) \
-                --name $(aksCluster) \
-                --overwrite-existing \
-                --file $(Pipeline.Workspace)/kube/config
-
 
   - stage: Configure_Kubernetes
     displayName: 'Configure Kubernetes Access'
@@ -88,22 +78,21 @@ stages:
                 --resource-group $(resourceGroup) \
                 --name $(aksCluster) \
                 --overwrite-existing \
-                --file kubeconfig
+                --file $(System.DefaultWorkingDirectory)/kubeconfig
               
-              # Display cluster info for verification
-              kubectl --kubeconfig=kubeconfig cluster-info
+              kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kubeconfig cluster-info
 
-        - task: Kubernetes@1
+        - task: Bash@3
           displayName: 'Create Namespace'
           inputs:
-            kubernetesServiceEndpoint: $(kubernetesServiceConnection)
-            command: 'apply'
-            useConfigurationFile: true
-            configuration: |
+            targetType: 'inline'
+            script: |
+              kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kubeconfig apply -f - <<EOF
               apiVersion: v1
               kind: Namespace
               metadata:
                 name: $(namespace)
+              EOF
 
   - stage: Deploy_Application
     displayName: 'Deploy Application'
@@ -111,13 +100,12 @@ stages:
     jobs:
     - job: Deploy
       steps:
-        - task: Kubernetes@1
+        - task: Bash@3
           displayName: 'Create MySQL secrets'
           inputs:
-            kubernetesServiceEndpoint: $(kubernetesServiceConnection)
-            command: 'apply'
-            useConfigurationFile: true
-            configuration: |
+            targetType: 'inline'
+            script: |
+              kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kubeconfig apply -f - <<EOF
               apiVersion: v1
               kind: Secret
               metadata:
@@ -125,9 +113,10 @@ stages:
                 namespace: $(namespace)
               type: Opaque
               data:
-                root-password: $(echo -n 'your-root-password' | base64)
-                username: $(echo -n 'your-db-user' | base64)
-                password: $(echo -n 'your-db-password' | base64)
+                root-password: $(echo -n 'your-root-password' | base64 -w0)
+                username: $(echo -n 'your-db-user' | base64 -w0)
+                password: $(echo -n 'your-db-password' | base64 -w0)
+              EOF
 
         - task: KubernetesManifest@1
           displayName: 'Deploy MySQL'
@@ -136,15 +125,15 @@ stages:
             action: 'deploy'
             namespace: $(namespace)
             manifests: |
-              $(Pipeline.Workspace)/manifests/mysql-deployment.yaml
-              $(Pipeline.Workspace)/manifests/mysql-service.yaml
+              $(System.DefaultWorkingDirectory)/manifests/mysql-deployment.yaml
+              $(System.DefaultWorkingDirectory)/manifests/mysql-service.yaml
 
         - task: Bash@3
           displayName: 'Wait for MySQL'
           inputs:
             targetType: 'inline'
             script: |
-              kubectl --kubeconfig=kubeconfig wait --namespace $(namespace) --for=condition=ready pod -l app=mysql --timeout=300s
+              kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kubeconfig wait --namespace $(namespace) --for=condition=ready pod -l app=mysql --timeout=300s
 
         - task: KubernetesManifest@1
           displayName: 'Deploy Backend'
@@ -153,8 +142,8 @@ stages:
             action: 'deploy'
             namespace: $(namespace)
             manifests: |
-              $(Pipeline.Workspace)/manifests/backend-deployment.yaml
-              $(Pipeline.Workspace)/manifests/backend-service.yaml
+              $(System.DefaultWorkingDirectory)/manifests/backend-deployment.yaml
+              $(System.DefaultWorkingDirectory)/manifests/backend-service.yaml
 
         - task: KubernetesManifest@1
           displayName: 'Deploy Frontend'
@@ -163,13 +152,13 @@ stages:
             action: 'deploy'
             namespace: $(namespace)
             manifests: |
-              $(Pipeline.Workspace)/manifests/frontend-deployment.yaml
-              $(Pipeline.Workspace)/manifests/frontend-service.yaml
+              $(System.DefaultWorkingDirectory)/manifests/frontend-deployment.yaml
+              $(System.DefaultWorkingDirectory)/manifests/frontend-service.yaml
 
         - task: Bash@3
           displayName: 'Get Frontend URL'
           inputs:
             targetType: 'inline'
             script: |
-              echo "##vso[task.setvariable variable=frontendUrl]http://$(kubectl --kubeconfig=kubeconfig get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
-              echo "Access your application at: http://$(kubectl --kubeconfig=kubeconfig get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+              echo "##vso[task.setvariable variable=frontendUrl]http://$(kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kubeconfig get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+              echo "Access your application at: http://$(kubectl --kubeconfig=$(System.DefaultWorkingDirectory)/kubeconfig get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
