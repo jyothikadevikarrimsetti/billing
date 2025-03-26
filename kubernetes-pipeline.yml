@@ -12,7 +12,7 @@ variables:
   backendImage: 'jyothika2832/billing-frontend:latest'
   mysqlImage: 'mysql:5.7'
   #Azure resources
-  azureSubscription: 'azure-resource-service-connection'
+  azureSubscription: 'azure-resource-manager-service-connection'
   resourceGroup: 'practise-rg'
   aksCluster: 'my-aks-cluster'
   namespace: 'production'
