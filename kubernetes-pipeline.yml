@@ -139,13 +139,12 @@ stages:
     jobs:
     - job: Deploy
       steps:
-        - task: Kubernetes@1
+        - task: Bash@3
           displayName: 'Create MySQL secrets'
           inputs:
-            kubernetesServiceEndpoint: $(kubernetesServiceConnection)
-            command: 'apply'
-            useConfigurationFile: true
-            configuration: |
+            targetType: 'inline'
+            script: |
+              kubectl apply -f - <<EOF
               apiVersion: v1
               kind: Secret
               metadata:
@@ -153,9 +152,15 @@ stages:
                 namespace: $(namespace)
               type: Opaque
               stringData:
-                root-password: your-root-password
-                username: your-db-user
-                password: your-db-password
+                root-password: $(sqlpass)
+                username: root
+                password: $(sqlpass)
+              EOF
+              
+              # Verify secret creation
+              kubectl get secret mysql-secrets -n $(namespace) -o yaml
+
+          
 
         - task: KubernetesManifest@1
           displayName: 'Deploy MySQL'
