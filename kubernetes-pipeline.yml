@@ -72,13 +72,6 @@ stages:
                   --generate-ssh-keys \
                   --location $(location)
               fi
-              
-              # Get credentials
-              az aks get-credentials \
-                --resource-group $(resourceGroup) \
-                --name $(aksCluster) \
-                --overwrite-existing \
-                --admin
 
   - stage: Configure_Kubernetes
     displayName: 'Configure Kubernetes Access'
@@ -89,14 +82,49 @@ stages:
         - task: KubectlInstaller@0
           displayName: 'Install kubectl'
 
+        - task: AzureCLI@2
+          displayName: 'Get AKS Credentials'
+          inputs:
+            azureSubscription: $(azureSubscription)
+            scriptType: 'bash'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              # Create kubeconfig directory
+              mkdir -p $(Pipeline.Workspace)/kube
+              
+              # Get credentials with admin access
+              az aks get-credentials \
+                --resource-group $(resourceGroup) \
+                --name $(aksCluster) \
+                --overwrite-existing \
+                --file $(Pipeline.Workspace)/kube/config \
+                --admin
+              
+              # Set KUBECONFIG environment variable
+              echo "##vso[task.setvariable variable=KUBECONFIG]$(Pipeline.Workspace)/kube/config"
+
         - task: Bash@3
           displayName: 'Verify Cluster Access'
           inputs:
             targetType: 'inline'
             script: |
+              # Verify kubeconfig exists
+              ls -la $(Pipeline.Workspace)/kube/config
+              
+              # Set context explicitly
+              kubectl config use-context "$(aksCluster)-admin"
+              
+              # Verify cluster access
               kubectl config current-context
               kubectl cluster-info
+              kubectl get nodes
 
+  - stage: Deploy_Application
+    displayName: 'Deploy Application'
+    dependsOn: Configure_Kubernetes
+    jobs:
+    - job: Deploy
+      steps:
         - task: Kubernetes@1
           displayName: 'Create Namespace'
           inputs:
@@ -109,12 +137,6 @@ stages:
               metadata:
                 name: $(namespace)
 
-  - stage: Deploy_Application
-    displayName: 'Deploy Application'
-    dependsOn: Configure_Kubernetes
-    jobs:
-    - job: Deploy
-      steps:
         - task: Kubernetes@1
           displayName: 'Create MySQL secrets'
           inputs:
