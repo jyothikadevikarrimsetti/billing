@@ -95,14 +95,18 @@ stages:
                 --admin \
                 --file $(Pipeline.Workspace)/kubeconfig/config
               
+              # Set KUBECONFIG for subsequent tasks
               echo "##vso[task.setvariable variable=KUBECONFIG]$(Pipeline.Workspace)/kubeconfig/config"
               echo "##vso[task.prependpath]$(Pipeline.Workspace)/kubeconfig"
 
         - script: |
+            echo "Current KUBECONFIG: $KUBECONFIG"
+            ls -la $(Pipeline.Workspace)/kubeconfig/config
             mkdir -p $HOME/.kube
             cp $(Pipeline.Workspace)/kubeconfig/config $HOME/.kube/config
             chmod 600 $HOME/.kube/config
             kubectl config use-context "$(aksCluster)-admin"
+            kubectl config view
           displayName: 'Configure kubectl access'
 
         - script: |
@@ -110,17 +114,17 @@ stages:
             kubectl get namespace $(namespace)
           displayName: 'Create and verify namespace'
 
+        - script: |
+            kubectl cluster-info
+            kubectl get nodes
+          displayName: 'Verify Cluster Connection'
+
   - stage: Deploy_Application
     displayName: 'Deploy Application'
     dependsOn: Configure_Kubernetes
     jobs:
     - job: Deploy
       steps:
-        - script: |
-            kubectl config view
-            kubectl cluster-info
-            kubectl get nodes
-          displayName: 'Debug Cluster Connection'
         - script: |
             kubectl create secret generic mysql-secrets \
               --namespace $(namespace) \
