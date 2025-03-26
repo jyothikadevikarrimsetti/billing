@@ -8,6 +8,7 @@ variables:
   mysqlImage: 'mysql:5.7'
   # Azure resources
   azureSubscription: 'azure-resource-manager-service-connection'
+  kubernetesServiceConnection: 'my-aks-connection' # New service connection for kubectl
   resourceGroup: 'practise-rg'
   aksCluster: 'my-aks-cluster'
   location: 'eastus'
@@ -50,55 +51,33 @@ stages:
                 --enable-addons monitoring \
                 --generate-ssh-keys \
                 --location $(location)
-              
-              # Store credentials as build artifact
-              mkdir -p $(Pipeline.Workspace)/kube
+
+  - stage: Configure_Kubernetes
+    displayName: 'Configure Kubernetes Access'
+    dependsOn: Provision_AKS
+    jobs:
+    - job: Configure
+      steps:
+        - task: AzureCLI@2
+          displayName: 'Get AKS Credentials'
+          inputs:
+            azureSubscription: $(azureSubscription)
+            scriptType: 'bash'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
               az aks get-credentials \
                 --resource-group $(resourceGroup) \
                 --name $(aksCluster) \
                 --overwrite-existing \
-                --file $(Pipeline.Workspace)/kube/config
+                --file kubeconfig
               
-              # Validate kubeconfig exists
-              ls -la $(Pipeline.Workspace)/kube
-              cat $(Pipeline.Workspace)/kube/config
-        
-        - task: PublishBuildArtifacts@1
-          displayName: 'Publish kubeconfig'
-          inputs:
-            PathtoPublish: '$(Pipeline.Workspace)/kube'
-            ArtifactName: 'kubeconfig'
-            publishLocation: 'Container'
+              # Display cluster info for verification
+              kubectl --kubeconfig=kubeconfig cluster-info
 
-  - stage: Deploy_Application
-    displayName: 'Deploy Application'
-    dependsOn: Provision_AKS
-    jobs:
-    - job: Deploy
-      steps:
-        - task: DownloadBuildArtifacts@0
-          displayName: 'Download kubeconfig'
-          inputs:
-            artifactName: 'kubeconfig'
-            downloadPath: '$(Pipeline.Workspace)'
-        
-        - task: KubectlInstaller@0
-          displayName: 'Install kubectl'
-
-        - task: Bash@3
-          displayName: 'Configure kubectl'
-          inputs:
-            targetType: 'inline'
-            script: |
-              mkdir -p ~/.kube
-              cp $(Pipeline.Workspace)/kubeconfig/config ~/.kube/config
-              chmod 600 ~/.kube/config
-              kubectl config current-context
-              kubectl cluster-info
-        
         - task: Kubernetes@1
           displayName: 'Create Namespace'
           inputs:
+            kubernetesServiceEndpoint: $(kubernetesServiceConnection)
             command: 'apply'
             useConfigurationFile: true
             configuration: |
@@ -106,11 +85,17 @@ stages:
               kind: Namespace
               metadata:
                 name: $(namespace)
-        
-        # Rest of your deployment steps remain the same...
+
+  - stage: Deploy_Application
+    displayName: 'Deploy Application'
+    dependsOn: Configure_Kubernetes
+    jobs:
+    - job: Deploy
+      steps:
         - task: Kubernetes@1
           displayName: 'Create MySQL secrets'
           inputs:
+            kubernetesServiceEndpoint: $(kubernetesServiceConnection)
             command: 'apply'
             useConfigurationFile: true
             configuration: |
@@ -128,6 +113,7 @@ stages:
         - task: KubernetesManifest@1
           displayName: 'Deploy MySQL'
           inputs:
+            kubernetesServiceEndpoint: $(kubernetesServiceConnection)
             action: 'deploy'
             namespace: $(namespace)
             manifests: |
@@ -139,11 +125,12 @@ stages:
           inputs:
             targetType: 'inline'
             script: |
-              kubectl wait --namespace $(namespace) --for=condition=ready pod -l app=mysql --timeout=300s
+              kubectl --kubeconfig=kubeconfig wait --namespace $(namespace) --for=condition=ready pod -l app=mysql --timeout=300s
 
         - task: KubernetesManifest@1
           displayName: 'Deploy Backend'
           inputs:
+            kubernetesServiceEndpoint: $(kubernetesServiceConnection)
             action: 'deploy'
             namespace: $(namespace)
             manifests: |
@@ -153,6 +140,7 @@ stages:
         - task: KubernetesManifest@1
           displayName: 'Deploy Frontend'
           inputs:
+            kubernetesServiceEndpoint: $(kubernetesServiceConnection)
             action: 'deploy'
             namespace: $(namespace)
             manifests: |
@@ -164,5 +152,5 @@ stages:
           inputs:
             targetType: 'inline'
             script: |
-              echo "##vso[task.setvariable variable=frontendUrl]http://$(kubectl get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
-              echo "Access your application at: http://$(kubectl get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+              echo "##vso[task.setvariable variable=frontendUrl]http://$(kubectl --kubeconfig=kubeconfig get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+              echo "Access your application at: http://$(kubectl --kubeconfig=kubeconfig get svc frontend -n $(namespace) -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
