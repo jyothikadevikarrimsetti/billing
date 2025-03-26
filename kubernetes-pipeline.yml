@@ -152,9 +152,9 @@ stages:
                 namespace: $(namespace)
               type: Opaque
               stringData:
-                root-password: $(sqlpass)
+                root-password: $(SQLPASS)
                 username: root
-                password: $(sqlpass)
+                password: $(SQLPASS)
               EOF
               
               # Verify secret creation
